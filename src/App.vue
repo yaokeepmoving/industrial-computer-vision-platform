@@ -121,13 +121,21 @@ function confirmEmergencyStop() {
 .industrial-app {
   height: 100vh;
   background-color: var(--q-dark-page);
+  display: flex;
+  flex-direction: column;
 }
 
 .emergency-stop-container {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 0;
   z-index: 9999;
+  transition: all 0.3s ease;
+  transform: translateX(50px); /* 默认隐藏一半 */
+  
+  &:hover {
+    transform: translateX(0); /* 鼠标悬停时完全显示 */
+  }
 }
 
 .emergency-stop-btn {
@@ -196,10 +204,13 @@ function confirmEmergencyStop() {
 
 .page-container {
   background-color: var(--dark-bg);
+  flex-grow: 1;
+  overflow-y: scroll !important;
 }
 
 .page-texture {
-  min-height: calc(100vh - 64px);
+  height: 100%;
+  overflow-y: scroll !important;
 }
 
 .industrial-drawer {

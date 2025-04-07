@@ -3,61 +3,103 @@ from sqlalchemy.orm import Session
 from ..services.annotation import AnnotationService
 from ..models import DatasetType
 from ..dependencies import get_db
-from typing import List
+from typing import List, Dict, Any
 from datetime import datetime
 import os
-from pydantic import BaseModel
+from pydantic import Field, validator
+from ..routers.base import CamelModel
 
 router = APIRouter(prefix="/api/annotation", tags=["annotation"])
 
-# 响应模型
-class DatasetResponse(BaseModel):
-    id: int
-    name: str
-    type: DatasetType
-    imageCount: int
-    createdAt: datetime
-    updatedAt: datetime
+class AnnotationResponse(CamelModel):
+    """标注数据基础模型"""
+    annotations: List[Dict[str, Any]] = Field(default_factory=list, description="标注标签列表")
+
+class DatasetResponse(CamelModel):
+    id: int = Field(..., description="数据集ID")
+    name: str = Field(..., min_length=1, max_length=100, description="数据集名称")
+    type: DatasetType = Field(..., description="数据集类型")
+    imageCount: int = Field(..., description="图片数量")
+    createdAt: datetime = Field(..., description="创建时间")
+    updatedAt: datetime = Field(..., description="更新时间")
 
     class Config:
-        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "文本区域标注数据集",
+                "type": "TEXT_REGION",
+                "imageCount": 100,
+                "createdAt": "2024-03-22T10:00:00",
+                "updatedAt": "2024-03-22T10:00:00"
+            }
+        }
 
-class ImageResponse(BaseModel):
-    id: int
-    filename: str
-    url: str
-    datasetId: int
-    createdAt: datetime
-    isAnnotated: bool = False
+class ImageResponse(CamelModel):
+    id: int = Field(..., description="图片ID")
+    filename: str = Field(..., description="文件名")
+    url: str = Field(..., description="图片URL")
+    datasetId: int = Field(..., description="所属数据集ID")
+    createdAt: datetime = Field(..., description="创建时间")
+    isAnnotated: bool = Field(False, description="是否已标注")
 
     class Config:
-        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "filename": "example.jpg",
+                "url": "/uploads/1/example.jpg",
+                "datasetId": 1,
+                "createdAt": "2024-03-22T10:00:00",
+                "isAnnotated": False
+            }
+        }
 
-# 请求模型
-class CreateDatasetRequest(BaseModel):
-    name: str
-    type: DatasetType = DatasetType.TEXT_REGION
+# --- 请求模型 ---
+class CreateDatasetRequest(CamelModel):
+    name: str = Field(..., min_length=1, max_length=100, description="数据集名称")
+    type: DatasetType = Field(default=DatasetType.TEXT_REGION, description="数据集类型")
 
-class UpdateDatasetRequest(BaseModel):
-    name: str
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError("数据集名称不能为空")
+        return v.strip()
 
-# 数据集管理接口
+class UpdateDatasetRequest(CamelModel):
+    name: str = Field(..., min_length=1, max_length=100, description="数据集名称")
+
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError("数据集名称不能为空")
+        return v.strip()
+
+class AnnotationRequest(CamelModel):
+    annotations: List[Dict[str, Any]] = Field(..., description="标注数据")
+
+    @validator('annotations')
+    def validate_annotations(cls, v):
+        if not isinstance(v, list):
+            raise ValueError("标注数据必须是列表")
+        return v
+
+# --- 路由处理函数 ---
 @router.get("/datasets", response_model=List[DatasetResponse])
 async def get_datasets(db: Session = Depends(get_db)):
     """获取所有数据集"""
     service = AnnotationService(db)
     datasets = service.get_datasets()
     
-    # 转换为响应格式
     return [
-        {
-            "id": dataset.id,
-            "name": dataset.name,
-            "type": dataset.type,
-            "imageCount": len(dataset.images),
-            "createdAt": dataset.created_at,
-            "updatedAt": dataset.updated_at
-        }
+        DatasetResponse(
+            id=dataset.id,
+            name=dataset.name,
+            type=dataset.type,
+            imageCount=len(dataset.images),
+            createdAt=dataset.created_at,
+            updatedAt=dataset.updated_at
+        )
         for dataset in datasets
     ]
 
@@ -70,14 +112,14 @@ async def create_dataset(
     service = AnnotationService(db)
     try:
         dataset = service.create_dataset(request.name, request.type)
-        return {
-            "id": dataset.id,
-            "name": dataset.name,
-            "type": dataset.type,
-            "imageCount": len(dataset.images),
-            "createdAt": dataset.created_at,
-            "updatedAt": dataset.updated_at
-        }
+        return DatasetResponse(
+            id=dataset.id,
+            name=dataset.name,
+            type=dataset.type,
+            imageCount=len(dataset.images),
+            createdAt=dataset.created_at,
+            updatedAt=dataset.updated_at
+        )
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -94,14 +136,14 @@ async def rename_dataset(
     service = AnnotationService(db)
     try:
         dataset = service.rename_dataset(dataset_id, request.name)
-        return {
-            "id": dataset.id,
-            "name": dataset.name,
-            "type": dataset.type,
-            "imageCount": len(dataset.images),
-            "createdAt": dataset.created_at,
-            "updatedAt": dataset.updated_at
-        }
+        return DatasetResponse(
+            id=dataset.id,
+            name=dataset.name,
+            type=dataset.type,
+            imageCount=len(dataset.images),
+            createdAt=dataset.created_at,
+            updatedAt=dataset.updated_at
+        )
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -110,11 +152,11 @@ async def rename_dataset(
 
 @router.delete("/datasets/{dataset_id}")
 async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
+    """删除数据集"""
     service = AnnotationService(db)
     service.delete_dataset(dataset_id)
     return {"status": "success"}
 
-# 图片管理接口
 @router.get("/datasets/{dataset_id}/images", response_model=List[ImageResponse])
 async def get_dataset_images(dataset_id: int, db: Session = Depends(get_db)):
     """获取数据集下的所有图片"""
@@ -122,14 +164,14 @@ async def get_dataset_images(dataset_id: int, db: Session = Depends(get_db)):
     try:
         images = service.get_dataset_images(dataset_id)
         return [
-            {
-                "id": image.id,
-                "filename": image.filename,
-                "url": f"/uploads/{dataset_id}/{image.filename}",  # 根据实际的URL规则调整
-                "isAnnotated": image.is_annotated,
-                "datasetId": image.dataset_id,
-                "createdAt": image.created_at
-            }
+            ImageResponse(
+                id=image.id,
+                filename=image.filename,
+                url=f"/uploads/{dataset_id}/{image.filename}",
+                isAnnotated=image.is_annotated,
+                datasetId=image.dataset_id,
+                createdAt=image.created_at
+            )
             for image in images
         ]
     except Exception as e:
@@ -177,14 +219,16 @@ async def upload_images(
                     filename=filename,
                     url=url
                 )
-                uploaded_images.append({
-                    "id": image.id,
-                    "filename": image.filename,
-                    "url": url,
-                    "datasetId": image.dataset_id,
-                    "createdAt": image.created_at,
-                    "isAnnotated": image.is_annotated
-                })
+                uploaded_images.append(
+                    ImageResponse(
+                        id=image.id,
+                        filename=image.filename,
+                        url=url,
+                        datasetId=image.dataset_id,
+                        createdAt=image.created_at,
+                        isAnnotated=image.is_annotated
+                    )
+                )
             except Exception as e:
                 # 如果数据库保存失败，删除已上传的文件
                 if os.path.exists(file_path):
@@ -201,78 +245,42 @@ async def upload_images(
 
 @router.delete("/images/{image_id}")
 async def delete_image(image_id: int, db: Session = Depends(get_db)):
+    """删除图片"""
     service = AnnotationService(db)
     service.delete_image(image_id)
     return {"status": "success"}
 
-# 标注管理接口
-@router.get("/images/{image_id}/annotation")
+@router.get("/images/{image_id}/annotation", response_model=AnnotationResponse)
 async def get_image_annotation(image_id: int, db: Session = Depends(get_db)):
     """获取图片的标注数据"""
     service = AnnotationService(db)
     try:
         annotation = service.get_image_annotation(image_id)
         if annotation:
-            return {
-                "annotations": annotation.get("labels", []),
-                "status": annotation.get("status", "pending")
-            }
-        return {
-            "annotations": [],
-            "status": "pending"
-        }
+            return AnnotationResponse(
+                annotations=annotation.get("annotations", []),
+                status=annotation.get("status", "pending")
+            )
+        return AnnotationResponse()
     except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Failed to get annotation: {str(e)}"
         )
 
-@router.post("/images/{image_id}/annotation")
-async def create_annotation(
+@router.post("/images/{image_id}/annotation", response_model=AnnotationResponse)
+async def save_annotation(
     image_id: int,
-    annotation_data: dict,
+    request: AnnotationRequest,
     db: Session = Depends(get_db)
 ):
+    """创建标注数据"""
     service = AnnotationService(db)
     try:
-        annotation = service.create_annotation(image_id, annotation_data)
-        return {"status": "success", "annotation": annotation}
+        annotation = service.save_annotation(image_id, request.dict())
+        return AnnotationResponse(**annotation.data)
     except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Failed to create annotation: {str(e)}"
-        )
-
-@router.put("/images/{image_id}/annotations/{annotation_id}")
-async def update_annotation(
-    image_id: int,
-    annotation_id: int,
-    annotation_data: dict,
-    db: Session = Depends(get_db)
-):
-    service = AnnotationService(db)
-    try:
-        annotation = service.update_annotation(annotation_id, annotation_data)
-        return {"status": "success", "annotation": annotation}
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to update annotation: {str(e)}"
-        )
-
-
-@router.delete("/images/{image_id}/annotations/{annotation_id}")
-async def delete_annotation(
-    image_id: int, 
-    annotation_id: str, 
-    db: Session = Depends(get_db)
-):
-    service = AnnotationService(db)
-    try:
-        service.delete_annotation(image_id, annotation_id)
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to delete annotation: {str(e)}"
         )

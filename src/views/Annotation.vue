@@ -58,7 +58,7 @@
         <!-- 标注区域 -->
         <div class="annotation-section">
           <q-card class="annotation-card">
-            <q-card-section>
+            <q-card-section class="annotation-card-section">
               <div class="row items-center q-mb-md">
                 <div class="col">
                   <div class="text-h6">{{ currentDataset?.name || '请选择数据集' }}</div>
@@ -92,6 +92,17 @@
                       <q-tooltip>标注视图</q-tooltip>
                     </q-btn>
 
+                    <q-btn flat round icon="download" @click="exportAnnotationDataset">
+                      <q-tooltip>导出标注数据集</q-tooltip>
+                    </q-btn>
+                    <q-btn flat round icon="upload_file" @click="importAnnotationDataset">
+                      <q-tooltip>导入标注数据集</q-tooltip>
+                      <input type="file" accept=".xlsx" class="hidden-input" ref="fileInput"
+                        @change="handleFileImport" />
+                    </q-btn>
+                    <q-btn flat round icon="auto_awesome" @click="openGenerateDataDialog" :disable="!currentDataset">
+                      <q-tooltip>合成数据</q-tooltip>
+                    </q-btn>
                     <!-- 更多按钮 -->
                     <q-btn flat round icon="more_vert">
                       <q-tooltip>更多</q-tooltip>
@@ -147,13 +158,33 @@
               <div v-else class="annotation-view">
                 <div class="annotation-container">
                   <template v-if="currentImage">
-                    <rect-annotator :image-url="currentImage.url" :image-id="currentImage.id"
-                      :current-image="currentImage" @update:annotations="handleAnnotationsUpdate" />
+                    <!-- Use OCRAnnotator for OCR datasets, TextRegionAnnotator for text region datasets -->
+                    <OCRAnnotator
+                      v-if="currentDataset && currentDataset.type === DatasetType.OCR"
+                      :imageUrl="currentImage.url"
+                      :imageId="currentImage.id"
+                      :currentImage="currentImage"
+                      @annotationStatusChange="handleAnnotationStatus"
+                      :key="`ocr-${currentImage.id}`"
+                    />
+                    <TextRegionAnnotator
+                      v-else
+                      :imageUrl="currentImage.url"
+                      :imageId="currentImage.id"
+                      :currentImage="currentImage"
+                      @annotationStatusChange="handleAnnotationStatus"
+                      :key="`text-region-${currentImage.id}`"
+                    />
                   </template>
                   <template v-else>
-                    <div class="text-center text-grey-6">
-                      <q-icon name="image" size="48px" />
-                      <div class="q-mt-sm">请选择图片进行标注</div>
+                    <div class="flex flex-center full-height">
+                      <div class="text-center">
+                        <q-icon name="image" size="48px" color="grey-7" />
+                        <div class="text-h6 q-mt-md">请选择图片</div>
+                        <div class="text-subtitle1 q-mt-sm text-grey-7">
+                          从左侧图片列表中选择一张图片进行标注
+                        </div>
+                      </div>
                     </div>
                   </template>
                 </div>
@@ -206,7 +237,7 @@
         </q-card-section>
 
         <q-card-section>
-          <q-file v-model="uploadFiles" label="选择图片" outlined multiple accept=".jpg,.jpeg,.png"
+          <q-file v-model="uploadFiles" label="选择图片" outlined multiple accept=".jpg,.jpeg,.png,.bmp"
             style="max-width: 300px">
             <template v-slot:prepend>
               <q-icon name="attach_file" />
@@ -288,6 +319,15 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+
+    <generate-data 
+      v-if="currentDataset"
+      v-model="showGenerateDataDialog" 
+      :source-dataset="currentDataset" 
+      :source-images="datasetImages"
+      @update:datasets="refreshDatasetAfterUpdate"
+    />
   </q-page>
 </template>
 
@@ -295,9 +335,12 @@
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { AnnotationService } from '../services/annotation'
-import type { Dataset, Image, AnnotationLabel } from '../services/annotation'
+import type { Dataset, Image } from '../services/annotation'
 import { DatasetType } from '../services/annotation'
-import RectAnnotator from '../components/annotation/RectAnnotator.vue'
+import TextRegionAnnotator from '../components/annotation/TextRegionAnnotator.vue'
+import GenerateData from '../components/annotation/GenerateData.vue'
+import OCRAnnotator from '../components/annotation/OCRAnnotator.vue'
+import * as XLSX from 'xlsx'
 
 const $q = useQuasar()
 const annotationService = new AnnotationService()
@@ -328,12 +371,14 @@ const creating = ref(false)
 const renaming = ref(false)
 const uploading = ref(false)
 const deleting = ref(false)
+const showGenerateDataDialog = ref(false)
 
 // 视图模式
 const viewMode = ref<'grid' | 'carousel'>('grid')
 
 // 缩略图导航
 const thumbnailScroll = ref<any>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 // 数据集管理
 const loadDatasets = async () => {
@@ -460,6 +505,10 @@ const deleteDataset = async () => {
 // 图片管理
 const selectDataset = async (dataset: Dataset) => {
   try {
+    if (currentDataset.value?.id === dataset.id) {
+      viewMode.value = 'grid'
+      return
+    }
     currentDataset.value = dataset
     currentImage.value = null
     selectedImages.value = []
@@ -517,8 +566,19 @@ const handleUploadImages = async () => {
 }
 
 // 标注相关
-const handleAnnotationsUpdate = (annotations: AnnotationLabel[]) => {
+const handleAnnotationsUpdate = (annotations: any[]) => {
   console.log('标注已更新:', annotations)
+  datasetImages.value = datasetImages.value.map(img => {
+    if (img.id === currentImage.value?.id) {
+      if (annotations.length === 0) {
+        img.isAnnotated = false
+      } else {
+        img.isAnnotated = true
+      }
+    }
+    return img;
+  })
+
 }
 
 // 缩略图导航
@@ -621,6 +681,211 @@ const showRenameDialog = (dataset: Dataset) => {
   currentDataset.value = dataset
   renameDatasetName.value = dataset.name
   renameDatasetDialog.value = true
+}
+
+const importAnnotationDataset = () => {
+  fileInput.value?.click()
+}
+
+const readExcelFile = (file: File): Promise<XLSX.WorkBook> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const data = new Uint8Array(event.target?.result as ArrayBuffer)
+      const workbook = XLSX.read(data, { type: 'array' })
+      resolve(workbook)
+    }
+    reader.onerror = (error) => {
+      reject(error)
+    }
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+const handleFileImport = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length) return
+
+  if (!currentDataset.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请先选择一个数据集',
+      position: 'top'
+    })
+    return
+  }
+
+  // 显示加载状态
+  let destroyLoading = $q.notify({
+    type: 'ongoing',
+    message: '正在导入标注数据...',
+  })
+
+  try {
+    const file = input.files[0]
+
+    // 检查文件大小
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      throw new Error('文件大小不能超过10MB')
+    }
+
+    // 检查文件类型
+    if (!file.name.endsWith('.xlsx')) {
+      throw new Error('只支持.xlsx格式的文件')
+    }
+
+    // 读取Excel文件
+    const wb = await readExcelFile(file)
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(ws) as { [key: string]: any }[]
+
+    // 验证数据格式
+    if (!data.length || !data[0]['标注数据']) {
+      throw new Error('导入文件格式不正确，缺少必要的标注数据字段')
+    }
+
+    // 获取当前数据集的所有图片
+    const images = await annotationService.getDatasetImages(currentDataset.value.id)
+
+    // 导入结果统计
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    }
+
+    // 逐条导入标注数据
+    for (let i = 0; i < Math.min(data.length, images.length); i++) {
+      try {
+        const annotationData = JSON.parse(data[i]['标注数据'])
+
+        // 验证标注数据格式
+        if (!annotationData || !annotationData.annotations) {
+          throw new Error('标注数据格式不正确')
+        }
+
+        // 保存标注数据
+        await annotationService.saveAnnotation(images[i].id, annotationData)
+        results.success++
+      } catch (error) {
+        results.failed++
+        results.errors.push(`导入第${i + 1}条标注数据失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      }
+    }
+
+    // 重新加载当前数据集图片
+    if (currentDataset.value) {
+      datasetImages.value = await annotationService.getDatasetImages(currentDataset.value.id)
+    }
+
+    // 显示导入结果
+    destroyLoading()
+    if (results.failed > 0) {
+      $q.notify({
+        type: 'warning',
+        message: `导入完成: ${results.success}个成功, ${results.failed}个失败`,
+        position: 'top',
+        timeout: 5000
+      })
+
+      // 显示详细错误信息
+      $q.dialog({
+        title: '导入错误详情',
+        message: results.errors.join('<br>'),
+        html: true,
+        ok: {
+          label: '确定'
+        }
+      })
+    } else {
+      $q.notify({
+        type: 'positive',
+        message: `成功导入 ${results.success} 个标注数据`,
+        position: 'top',
+        timeout: 3000
+      })
+    }
+  } catch (error) {
+    console.error('导入失败:', error)
+    $q.notify({
+      type: 'negative',
+      message: error instanceof Error ? error.message : '导入失败',
+      position: 'top',
+      timeout: 5000
+    })
+  } finally {
+    destroyLoading()
+    input.value = ''
+  }
+}
+
+const exportAnnotationDataset = async () => {
+  if (!currentDataset.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请先选择一个数据集',
+      position: 'top'
+    })
+    return
+  }
+  // 显示加载状态
+  let destroyLoading = $q.notify({
+    type: 'ongoing',
+    message: '正在导出标注数据集...',
+  })
+
+  try {
+
+    // 获取当前数据集的所有图片和标注数据
+    const images = await annotationService.getDatasetImages(currentDataset.value.id)
+    const annotations = await Promise.all(
+      images.map(img => annotationService.getImageAnnotation(img.id))
+    )
+
+    // 准备Excel数据
+    const workbook = XLSX.utils.book_new()
+
+    // 创建标注数据工作表
+    const annotationData = images.map((img, index) => {
+      return {
+        '标注数据': JSON.stringify(annotations[index]),
+        '图片预览': `${window.location.origin}${img.url}`, // 添加完整图片URL字段用于后续处理
+        '标注状态': annotations[index].annotations.length > 0 ? '已标注' : '未标注',
+      }
+    })
+
+    const worksheet = XLSX.utils.json_to_sheet(annotationData)
+    XLSX.utils.book_append_sheet(workbook, worksheet, '标注数据')
+
+    // 导出Excel文件
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    // 创建下载链接
+    const fileName = `${currentDataset.value.name}_导出_${new Date().toISOString().slice(0, 10)}.xlsx`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+
+    // 清理
+    URL.revokeObjectURL(url)
+    $q.notify({
+      type: 'positive',
+      message: '标注数据集导出成功',
+      position: 'top'
+    })
+  } catch (error) {
+    console.error('导出标注数据集失败:', error)
+    $q.notify({
+      type: 'negative',
+      message: '导出标注数据集失败，请重试',
+      position: 'top'
+    })
+  } finally {
+    setTimeout(destroyLoading, 1000);
+  }
 }
 
 const confirmDeleteDataset = (dataset: Dataset) => {
@@ -763,6 +1028,48 @@ const getDatasetTypeIcon = (type: DatasetType): string => {
   return icons[type]
 }
 
+// 添加这个方法来刷新数据集后更新
+const refreshDatasetAfterUpdate = async () => {
+  console.log('Refreshing dataset after update')
+  
+  const images = await annotationService.getDatasetImages(currentDataset.value!.id)
+  datasetImages.value = images
+}
+
+// 添加这个方法来处理注释组件的切换
+const handleAnnotationStatus = (status: 'completed' | 'incomplete') => {
+  console.log('Annotation status changed:', status)
+  
+  // 只有当当前有图片时才更新图片状态
+  if (currentImage.value) {
+    // 更新本地状态中的图片状态
+    const index = datasetImages.value.findIndex(img => img.id === currentImage.value!.id)
+    if (index !== -1) {
+      const isAnnotated = status === 'completed'
+      
+      // 只有当状态实际改变时才更新
+      if (datasetImages.value[index].isAnnotated !== isAnnotated) {
+        console.log(`Updating image ${currentImage.value.id} annotation status to ${isAnnotated}`)
+        datasetImages.value[index].isAnnotated = isAnnotated
+      }
+    }
+  }
+}
+
+// 添加生成数据相关的函数
+const openGenerateDataDialog = () => {
+  if (!currentDataset.value) {
+    $q.notify({
+      type: 'warning',
+      message: '请先选择一个数据集',
+      position: 'top'
+    })
+    return
+  }
+  
+  showGenerateDataDialog.value = true
+}
+
 // 初始化
 onMounted(async () => {
   console.log('组件挂载，开始加载数据集')
@@ -789,7 +1096,6 @@ watch(() => currentDataset.value, (newDataset) => {
 
 .annotation-layout {
   display: flex;
-  min-width: 1200px; // 设置最小宽度
   width: 100%;
   height: 100%;
   gap: 16px;
@@ -812,10 +1118,18 @@ watch(() => currentDataset.value, (newDataset) => {
   height: 100%;
 }
 
+.annotation-card-section {
+  height: 100%;
+}
+
+.annotation-view {
+  height: 100%;
+}
+
 .annotation-container {
   position: relative;
   width: 100%;
-  background: #f5f5f5;
+  height: 65%;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -872,10 +1186,6 @@ watch(() => currentDataset.value, (newDataset) => {
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-      &.image-annotated {
-        border-color: var(--industrial-blue);
-      }
-
       &:hover {
         transform: scale(1.05);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -921,7 +1231,7 @@ watch(() => currentDataset.value, (newDataset) => {
 
   .thumbnail-container {
     position: relative;
-    padding: 0 4px;
+    padding: 4px 4px;
 
     .annotation-badge {
       position: absolute;
@@ -934,7 +1244,7 @@ watch(() => currentDataset.value, (newDataset) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--q-positive);
+      background: var(--industrial-blue);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
       .q-icon {
@@ -947,10 +1257,6 @@ watch(() => currentDataset.value, (newDataset) => {
       border-radius: 4px;
       transition: all 0.3s ease;
 
-      &.image-annotated {
-        border-color: var(--q-positive);
-      }
-
       &:hover {
         transform: scale(1.1);
       }
@@ -960,19 +1266,6 @@ watch(() => currentDataset.value, (newDataset) => {
         transform: scale(1.1);
         box-shadow: 0 0 0 2px var(--primary);
       }
-    }
-  }
-}
-
-.annotation-controls {
-  .q-btn {
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.7);
-      transform: scale(1.1);
     }
   }
 }
@@ -1035,6 +1328,10 @@ watch(() => currentDataset.value, (newDataset) => {
       opacity: 0.5;
     }
   }
+}
+
+.hidden-input {
+  display: none;
 }
 
 // 添加工业风格变量

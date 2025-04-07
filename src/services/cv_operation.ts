@@ -48,6 +48,11 @@ export interface UpdateCVOperationRequest {
   outputParams?: ParamConfig[]
 }
 
+// 应用操作请求类型
+export interface ApplyOperationRequest {
+  inputParams: Record<string, any>
+}
+
 export class CVOperationService {
   /**
    * 获取所有CV操作列表
@@ -91,28 +96,12 @@ export class CVOperationService {
   /**
    * 应用CV操作处理图像
    */
-  async applyOperation(operationId: number, params?: Record<string, any>): Promise<Array<{
-    name: string
-    type: string
-    data: any
-  }>> {
-    const formData = new FormData()
-    formData.append('operation_id', operationId.toString())
-    if (params) {
-      formData.append('params', JSON.stringify(params))
-    }
-
-    const response = await apiService.post<Array<{
-      name: string
-      type: string
-      data: any
-    }>>('/cv/apply_operation', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    } as any)
-
-    return response
+  async applyOperation(operationId: number, data: ApplyOperationRequest): Promise<any> {
+    const response = await apiService.post<any>(
+      `/cv/operations/${operationId}/apply`,
+      data
+    )
+    return response.result
   }
 }
 

@@ -100,20 +100,44 @@ class AnnotationService:
 
     def get_image_annotation(self, image_id: int) -> Optional[dict]:
         try:
-            annotation = self.db.query(Annotation)\
-                .filter(Annotation.image_id == image_id)\
-                .order_by(Annotation.timestamp.desc())\
-                .first()
+            # Changed to get the single annotation for the image
+            ann = self.db.query(Annotation).filter(Annotation.image_id == image_id).first()
+            if not ann:
+                return None
             
-            if annotation:
-                return annotation.data
-            return None
+            return ann.data
         except Exception as e:
             raise e
 
-    def create_annotation(self, image_id: int, annotation_data: dict) -> Annotation:
+    def save_annotation(self, image_id: int, annotation_data: dict) -> Annotation:
         try:
-            # 创建新的标注记录
+            # Check if image exists
+            image = self.db.query(Image).filter(Image.id == image_id).first()
+            if not image:
+                raise HTTPException(status_code=404, detail="Image not found")
+            
+            # Check if annotation already exists for this image
+            existing_annotation = self.db.query(Annotation).filter(
+                Annotation.image_id == image_id
+            ).first()
+            
+            if existing_annotation:
+                # Update existing annotation instead of creating a new one
+                existing_annotation.data = annotation_data
+                existing_annotation.updated_at = datetime.utcnow()
+                self.db.commit()
+                self.db.refresh(existing_annotation)
+                
+                # Update image annotation status
+                if len(annotation_data.get('annotations', [])) == 0:
+                    image.is_annotated = False
+                else:
+                    image.is_annotated = True
+                self.db.commit()
+                
+                return existing_annotation
+            
+            # Create new annotation if none exists
             annotation = Annotation(
                 image_id=image_id,
                 data=annotation_data
@@ -122,58 +146,11 @@ class AnnotationService:
             self.db.commit()
             self.db.refresh(annotation)
 
-            # 更新图片的标注状态
-            image = self.db.query(Image).filter(Image.id == image_id).first()
-            if image:
-                image.is_annotated = True
-                self.db.commit()
-
-            return annotation
-        except Exception as e:
-            self.db.rollback()
-            raise e
-
-    def update_annotation(self, annotation_id: int, annotation_data: dict) -> Annotation:
-        try:
-            annotation = self.db.query(Annotation).filter(
-                Annotation.id == annotation_id
-            ).first()
-            if not annotation:
-                raise HTTPException(status_code=404, detail="Annotation not found")
-            
-            # 更新标注数据
-            annotation.data = annotation_data
-            annotation.updated_at = datetime.utcnow()
+            # Update image annotation status
+            image.is_annotated = True
             self.db.commit()
-            self.db.refresh(annotation)
-            return annotation
-        except Exception as e:
-            self.db.rollback()
-            raise e
 
-    def delete_annotation(self, image_id: int, annotation_id: int) -> None:
-        try:
-            annotation = self.db.query(Annotation)\
-                .filter(
-                    Annotation.image_id == image_id,
-                    Annotation.id == annotation_id
-                ).first()
-            # 检查图片是否还有其他标注
-            other_annotations = self.db.query(Annotation)\
-                .filter(
-                    Annotation.image_id == image_id,
-                    Annotation.id != annotation_id
-                ).first()
-            
-            # 如果没有其他标注,将图片标注状态设为False
-            if not other_annotations:
-                image = self.db.query(Image).filter(Image.id == image_id).first()
-                if image:
-                    image.is_annotated = False
-                    self.db.commit()
-            if annotation:
-                self.db.delete(annotation)
-                self.db.commit()
+            return annotation
         except Exception as e:
             self.db.rollback()
             raise e

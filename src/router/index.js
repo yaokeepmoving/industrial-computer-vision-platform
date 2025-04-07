@@ -37,6 +37,16 @@ const routes = [
     meta: { title: '模型训练', icon: 'model_training' }
   },
   {
+    path: '/model/test/:id',
+    name: 'ModelTest',
+    component: () => import('../views/Model.vue'),
+    props: route => ({
+      mode: 'test',
+      modelId: parseInt(route.params.id)
+    }),
+    meta: { title: '模型测试', parent: 'Model' }
+  },
+  {
     path: '/cv-operations',
     name: 'CVOperations',
     component: () => import('../views/CVOperation.vue'),

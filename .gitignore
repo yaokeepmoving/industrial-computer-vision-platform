@@ -99,3 +99,5 @@ coverage.xml
 .env.test
 .env.production
 .conda/
+
+yolov5/

@@ -8,15 +8,80 @@ from fastapi import HTTPException, UploadFile
 from ..models import CVOperation, ParamType, ParamConfig
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+from .model import ModelService
 
 class CVOperationService:
     def __init__(self, db: Session):
         self.db = db
+        self.model_service = ModelService(db)
+        
         # 初始化代码执行上下文
         self.context = {
             'cv2': cv2,
-            'np': np
+            'np': np,
+            'get_yolo_model': self._get_yolo_model,  # 添加获取YOLO模型的函数
+            'get_all_models': self._get_all_models    # 添加获取所有已加载模型的函数
         }
+
+    def _get_yolo_model(self, model_id: int):
+        """
+        获取YOLO模型实例，供CV操作使用
+        
+        在操作中的调用示例:
+        ```python
+        def process(image, **params):
+            # 获取YOLO模型
+            yolo_model = get_yolo_model(1)  # 传入模型ID
+            
+            # 使用模型预测
+            annotated_img, detections = yolo_model.predict(image)
+            
+            return {
+                'output_image': annotated_img,
+                'detections': detections
+            }
+        ```
+        """
+        try:
+            return self.model_service.get_model_instance(model_id)
+        except Exception as e:
+            raise ValueError(f"获取YOLO模型失败: {str(e)}")
+            
+    def _get_all_models(self):
+        """
+        获取所有已加载的模型字典，供CV操作使用
+        
+        在操作中的调用示例:
+        ```python
+        def process(image, **params):
+            # 获取所有已加载模型
+            models = get_all_models()
+            
+            # 获取模型ID列表
+            model_ids = list(models.keys())
+            
+            # 使用某个模型进行预测
+            if model_ids:
+                yolo_model = models[model_ids[0]]
+                annotated_img, detections = yolo_model.predict(image)
+                return {
+                    'output_image': annotated_img,
+                    'detections': detections
+                }
+            else:
+                return {
+                    'output_image': image,
+                    'error': '没有可用的模型'
+                }
+        ```
+        
+        Returns:
+            Dict[int, YOLOModel]: 模型ID到模型实例的映射字典
+        """
+        try:
+            return self.model_service._loaded_models
+        except Exception as e:
+            raise ValueError(f"获取已加载模型失败: {str(e)}")
 
     def get_operations(self) -> List[CVOperation]:
         """获取所有CV操作"""
@@ -92,77 +157,116 @@ class CVOperationService:
             self.db.rollback()
             raise e 
         
-    def apply_operation(self, operation_id: int, params: FormData) -> dict:
+    def apply_operation(self, operation_id: int, params: Dict[str, Any]) -> Dict[str, Any]:
         """应用CV操作并返回处理结果"""
         operation = self.get_operation(operation_id)
         if not operation:
             raise HTTPException(status_code=404, detail="Operation not found")
 
         try:
-            # 根据operation的input_params处理参数
-            processed_params = {}
-            if params:
-                for param_config in operation.input_params:
-                    param_value = params.get(param_config.name)
-                    if param_value is None:
-                        if param_config.get('required', False):  # 检查必需参数
+            # 创建完整的参数字典，确保所有定义的参数都存在
+            complete_params = {}
+            
+            # 为每个定义的输入参数创建条目，如果参数未提供则使用默认值
+            for param_config in operation.input_params:
+                param_name = param_config['name']
+                param_type = param_config['type']
+                param_default = param_config.get('default')
+                
+                # 如果参数未提供，使用默认值
+                if param_name not in params:
+                    complete_params[param_name] = param_default
+                    continue
+                
+                # 获取参数值并进行类型处理
+                param_value = params.get(param_name)
+                
+                # 如果参数值为None且有默认值，使用默认值
+                if param_value is None and param_default is not None:
+                    param_value = param_default
+                
+                # 根据参数类型处理
+                if param_type == 'image':
+                    # 处理图像参数
+                    if isinstance(param_value, str):
+                        try:
+                            # 如果是base64字符串，转换为numpy数组
+                            image_data = base64.b64decode(param_value)
+                            nparr = np.frombuffer(image_data, np.uint8)
+                            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                            if img is None:
+                                raise ValueError(f"无效的图像数据: {param_name}")
+                            complete_params[param_name] = img
+                        except Exception as e:
                             raise HTTPException(
                                 status_code=400,
-                                detail=f"Missing required parameter: {param_config.name}"
+                                detail=f"无法解码图像参数 {param_name}: {str(e)}"
                             )
-                        continue
-
-                    try:
-                        if param_config.type == ParamType.IMAGE:
-                            # 处理图片类型
-                            if isinstance(param_value, UploadFile):
-                                image_bytes = param_value.file.read()
-                                nparr = np.frombuffer(image_bytes, np.uint8)
-                                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                                if img is None:
-                                    raise ValueError("Invalid image data")
-                                processed_params[param_config.name] = img
-                            else:
-                                raise ValueError("Expected UploadFile for image parameter")
-                                
-                        elif param_config.type == ParamType.NUMBER:
-                            # 处理数值类型
-                            processed_params[param_config.name] = float(param_value)
-                            
-                        elif param_config.type == ParamType.TEXT:
-                            # 处理文本类型
-                            processed_params[param_config.name] = str(param_value)
-                            
-                        elif param_config.type == ParamType.BOOLEAN:
-                            # 处理布尔类型
-                            if isinstance(param_value, str):
-                                processed_params[param_config.name] = param_value.lower() == 'true'
-                            else:
-                                processed_params[param_config.name] = bool(param_value)
-                                
-                        elif param_config.type in (ParamType.ARRAY, ParamType.OBJECT):
-                            # 处理数组和对象类型
-                            if isinstance(param_value, str):
-                                try:
-                                    processed_params[param_config.name] = json.loads(param_value)
-                                except json.JSONDecodeError:
-                                    raise ValueError(f"Invalid JSON for parameter {param_config.name}")
-                            else:
-                                processed_params[param_config.name] = param_value
-                        else:
-                            # 未知类型保持不变
-                            processed_params[param_config.name] = param_value
-                            
-                    except Exception as e:
+                    elif isinstance(param_value, np.ndarray):
+                        # 直接使用numpy数组
+                        complete_params[param_name] = param_value
+                    elif param_value is None:
+                        # 保持None值
+                        complete_params[param_name] = None
+                    else:
                         raise HTTPException(
                             status_code=400,
-                            detail=f"Error processing parameter {param_config.name}: {str(e)}"
+                            detail=f"图像参数 {param_name} 类型不正确，期望numpy.ndarray或base64字符串，但得到 {type(param_value)}"
                         )
-
+                elif param_type == 'number':
+                    # 处理数字参数
+                    try:
+                        if param_value is not None:
+                            complete_params[param_name] = float(param_value)
+                        else:
+                            complete_params[param_name] = None
+                    except (ValueError, TypeError):
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"无法将参数 {param_name} 转换为数字类型"
+                        )
+                elif param_type == 'boolean':
+                    # 处理布尔参数
+                    if param_value is not None:
+                        complete_params[param_name] = bool(param_value)
+                    else:
+                        complete_params[param_name] = None
+                elif param_type == 'text':
+                    # 处理文本参数
+                    if param_value is not None:
+                        complete_params[param_name] = str(param_value)
+                    else:
+                        complete_params[param_name] = None
+                elif param_type == 'array':
+                    # 处理数组参数
+                    if param_value is None:
+                        complete_params[param_name] = None
+                    elif isinstance(param_value, list):
+                        complete_params[param_name] = param_value
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"参数 {param_name} 类型不正确，期望数组类型，但得到 {type(param_value)}"
+                        )
+                elif param_type == 'object':
+                    # 处理对象参数
+                    if param_value is None:
+                        complete_params[param_name] = None
+                    elif isinstance(param_value, dict):
+                        complete_params[param_name] = param_value
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"参数 {param_name} 类型不正确，期望对象类型，但得到 {type(param_value)}"
+                        )
+                else:
+                    # 其他类型直接传递
+                    complete_params[param_name] = param_value
+            
             # 准备执行环境
             exec_context = {
                 **self.context,
-                **processed_params
+                **complete_params
             }
 
             # 执行代码
@@ -172,13 +276,13 @@ class CVOperationService:
             except Exception as e:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Error executing operation code: {str(e)}"
+                    detail=f"执行操作代码出错: {str(e)}"
                 )
 
             if 'process' not in namespace:
                 raise HTTPException(
                     status_code=400,
-                    detail="No 'process' function defined in operation code"
+                    detail="操作代码中未定义'process'函数"
                 )
 
             # 验证处理函数
@@ -186,66 +290,55 @@ class CVOperationService:
             if not callable(process_func):
                 raise HTTPException(
                     status_code=400,
-                    detail="'process' must be a callable function"
+                    detail="'process'必须是一个可调用的函数"
                 )
 
-            # 执行处理函数
+            # 执行处理函数，确保传入所有定义的参数
             try:
-                result = process_func(**processed_params) if processed_params else process_func()
+                result = process_func(**complete_params)
             except Exception as e:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Error executing process function: {str(e)}"
+                    detail=f"执行process函数时出错: {str(e)}"
                 )
 
-            # 验证输出类型
+            # 验证输出
             if not operation.output_params:
                 raise HTTPException(
                     status_code=400,
-                    detail="No output type configured"
+                    detail="未配置输出类型"
                 )
-            output_params = operation.output_params
+
+            # 验证输出参数
             output_data = {}
-
-            # 根据输出类型处理结果
-            try:
-                for param_config in output_params:
-                    param_name = param_config['name']
-                    param_type = param_config['type']
-                    
-                    if param_name not in result:
-                        raise ValueError(f"Missing output parameter: {param_name}")
-                        
-                    value = result[param_name]
-                    
-                    if param_type == ParamType.IMAGE:
-                        if not isinstance(value, np.ndarray):
-                            raise ValueError(f"Expected image output for {param_name} but got different type")
-                        success, encoded_img = cv2.imencode('.png', value)
-                        if not success:
-                            raise ValueError(f"Failed to encode processed image for {param_name}")
-                        output_data[param_name] = {
-                            'type': ParamType.IMAGE.value,
-                            'data': base64.b64encode(encoded_img.tobytes()).decode('utf-8')
-                        }
-                    else:
-                        output_data[param_name] = {
-                            'type': param_type.value,
-                            'data': value
-                        }
-                        
-                return output_data
+            for param_config in operation.output_params:
+                param_name = param_config['name']
+                param_type = param_config['type']
                 
-            except Exception as e:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Error processing operation result: {str(e)}"
-                )
+                if not isinstance(result, dict):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"process函数必须返回字典类型，但返回了 {type(result)}"
+                    )
+                
+                if param_name not in result:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"缺少输出参数: {param_name}"
+                    )
+                
+                # 对于图像类型的输出，保持numpy数组格式
+                if param_type == 'image' and isinstance(result[param_name], np.ndarray):
+                    output_data[param_name] = result[param_name]
+                else:
+                    output_data[param_name] = result[param_name]
 
+            return output_data
+                
         except HTTPException:
             raise
         except Exception as e:
             raise HTTPException(
                 status_code=500,
-                detail=f"Internal server error: {str(e)}"
+                detail=f"服务器内部错误: {str(e)}"
             )

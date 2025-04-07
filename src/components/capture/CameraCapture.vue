@@ -1,264 +1,546 @@
 <template>
   <div class="camera-capture">
     <div class="camera-preview">
-      <video
-        ref="videoElement"
-        class="video-stream"
-        :class="{ 'is-recording': isRecording }"
-        autoplay
-        playsinline
+      <img 
+        ref="streamImageElement" 
+        class="video-stream" 
+        :src="streamUrl" 
+        alt="视频流" 
+        @error="handleStreamError"
+        @load="handleStreamLoaded"
+        v-show="isStreaming || (!isStreaming && !uploadedImage)"
       />
-      <canvas ref="canvasElement" style="display: none" />
+      
+      <div v-if="isLoading" class="loading-overlay">
+        <q-spinner size="3em" color="primary" />
+        <div class="q-mt-sm">加载摄像头...</div>
+      </div>
+      
+      <div v-if="streamError" class="error-overlay">
+        <q-icon name="error" size="3em" color="negative" />
+        <div class="q-mt-sm">{{ streamError }}</div>
+      </div>
+      
+      <!-- 显示上传的图片 -->
+      <div v-if="uploadedImage" class="uploaded-image-preview">
+        <img :src="uploadedImage" alt="上传的图片" class="uploaded-image" />
+        <div class="uploaded-image-info">
+          <q-badge color="secondary">已上传图片</q-badge>
+        </div>
+      </div>
+      
+      <!-- 无相机提示 -->
+      <div v-if="!props.streamUrl && !uploadedImage" class="no-camera-overlay">
+        <q-icon name="cloud_upload" size="3em" color="primary" />
+        <div class="q-mt-sm">无可用相机，请上传图片</div>
+      </div>
     </div>
     
     <div class="camera-controls">
       <q-btn-group spread>
-        <q-btn
-          icon="videocam"
-          :label="isStreaming ? '停止预览' : '开始预览'"
-          :color="isStreaming ? 'negative' : 'primary'"
-          @click="toggleStream"
-        />
-        <q-btn
-          icon="photo_camera"
-          label="拍照"
-          color="secondary"
-          :disable="!isStreaming"
-          @click="captureImage"
-        />
-        <q-btn
-          icon="settings"
-          label="设置"
-          color="grey"
-          @click="showSettings = true"
-        />
-      </q-btn-group>
-    </div>
-
-    <q-dialog v-model="showSettings">
-      <q-card style="min-width: 350px">
-        <q-card-section>
-          <div class="text-h6">相机设置</div>
-        </q-card-section>
-
-        <q-card-section class="q-pt-none">
-          <q-select
-            v-model="selectedDevice"
-            :options="videoDevices"
-            label="选择摄像头"
-            option-label="label"
-            option-value="deviceId"
-            emit-value
-            map-options
-            @update:model-value="handleDeviceChange"
+        <!-- 有相机时的按钮组 -->
+        <template v-if="props.streamUrl">
+          <q-btn
+            icon="videocam"
+            :label="isStreaming ? '停止监控' : '开始监控'"
+            :color="isStreaming ? 'negative' : 'primary'"
+            @click="toggleStream"
           />
           
-          <q-select
-            v-model="selectedResolution"
-            :options="resolutionOptions"
-            label="分辨率"
-            option-label="label"
-            @update:model-value="handleResolutionChange"
+          <!-- 预览状态显示拍照按钮 -->
+          <q-btn v-if="isStreaming"
+            icon="photo_camera"
+            label="拍照"
+            color="secondary"
+            @click="captureImage"
           />
-
-          <div class="row q-mt-md">
-            <div class="col">
-              <q-toggle
-                v-model="autoFocus"
-                label="自动对焦"
-                @update:model-value="updateCameraSettings"
-              />
-            </div>
-            <div class="col">
-              <q-toggle
-                v-model="autoExposure"
-                label="自动曝光"
-                @update:model-value="updateCameraSettings"
-              />
-            </div>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="关闭" color="primary" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+          
+          <!-- 停止预览状态显示上传文件按钮 -->
+          <q-btn v-else
+            icon="cloud_upload"
+            label="上传图片"
+            color="secondary"
+            @click="triggerFileUpload"
+          />
+        </template>
+        
+        <!-- 没有相机时只显示上传图片按钮 -->
+        <template v-else>
+          <q-btn
+            icon="cloud_upload"
+            label="上传图片"
+            color="primary"
+            class="full-width"
+            @click="triggerFileUpload"
+          />
+        </template>
+      </q-btn-group>
+      
+      <div class="text-caption q-mt-sm text-grey-8">
+        <span v-if="props.streamUrl">
+          流状态: {{ isStreaming ? '正在监控' : '已停止' }}
+        </span>
+        <span v-else-if="uploadedImage">
+          已上传图片，等待处理
+        </span>
+        <span v-else>
+          无相机，请上传图片
+        </span>
+      </div>
+      
+      <!-- 使用已上传的图片处理的按钮 -->
+      <div v-if="uploadedImage" class="upload-actions q-mt-sm">
+        <q-btn
+          icon="auto_fix_high"
+          label="使用此图片处理"
+          color="primary"
+          class="full-width"
+          @click="useUploadedImage"
+        />
+        <q-btn
+          icon="refresh"
+          label="重新上传"
+          color="secondary"
+          class="full-width q-mt-xs"
+          flat
+          @click="triggerFileUpload"
+        />
+      </div>
+      
+      <!-- 隐藏的文件上传输入 -->
+      <input 
+        type="file" 
+        ref="fileInput" 
+        accept="image/*" 
+        style="display:none" 
+        @change="handleFileUpload" 
+      />
+    </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
 
-// 状态变量
-const videoElement = ref(null)
-const canvasElement = ref(null)
-const isStreaming = ref(false)
-const isRecording = ref(false)
-const showSettings = ref(false)
-const selectedDevice = ref(null)
-const videoDevices = ref([])
-const selectedResolution = ref(null)
-const autoFocus = ref(true)
-const autoExposure = ref(true)
-
-// 分辨率选项
-const resolutionOptions = [
-  { label: '1920x1080', width: 1920, height: 1080 },
-  { label: '1280x720', width: 1280, height: 720 },
-  { label: '640x480', width: 640, height: 480 }
-]
-
-// 当前视频流
-let currentStream = null
-
-// 获取可用的视频设备
-async function getVideoDevices() {
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    videoDevices.value = devices
-      .filter(device => device.kind === 'videoinput')
-      .map(device => ({
-        label: device.label || `Camera ${device.deviceId.slice(0, 8)}...`,
-        deviceId: device.deviceId
-      }))
-    
-    if (videoDevices.value.length > 0 && !selectedDevice.value) {
-      selectedDevice.value = videoDevices.value[0].deviceId
-    }
-  } catch (error) {
-    console.error('获取视频设备失败:', error)
-    $q.notify({
-      type: 'negative',
-      message: '无法访问摄像头设备',
-      position: 'top'
-    })
+// Props定义
+const props = defineProps({
+  streamUrl: {
+    type: String,
+    default: ''
+  },
+  detectionResult: {
+    type: Object,
+    default: null
+  },
+  isProcessing: {
+    type: Boolean,
+    default: false
   }
+})
+
+// 状态变量
+const streamImageElement = ref<HTMLImageElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const isStreaming = ref(false)
+const isLoading = ref(false)
+const streamError = ref<string | null>(null)
+const isManualToggle = ref(false)
+const uploadedImage = ref<string | null>(null)
+
+// 删除额外的处理变量，只保留基本状态
+let processingFrames = false
+
+// 事件
+const emit = defineEmits(['capture', 'error', 'status-change', 'frame', 'stream-ready', 'stream-error'])
+
+// 监听流URL的变化
+watch(() => props.streamUrl, (newUrl, oldUrl) => {
+  console.log('流URL改变:', oldUrl, '->', newUrl)
+  
+  // 如果是手动操作，忽略此次URL变化
+  if (isManualToggle.value) {
+    console.log('忽略URL变化，因为是手动操作')
+    isManualToggle.value = false
+    return
+  }
+  
+  // URL自动变化的处理逻辑
+  if (newUrl && !oldUrl) {
+    console.log('新的流URL可用，启动预览')
+    startStream()
+  } else if (newUrl && oldUrl && newUrl !== oldUrl && isStreaming.value) {
+    console.log('流URL已更改，重新启动预览')
+    stopStream()
+    setTimeout(() => startStream(), 100)
+  } else if (!newUrl && oldUrl) {
+    console.log('流URL变为空，停止预览')
+    stopStream()
+  }
+}, { immediate: true })
+
+// 监听处理状态变化
+watch(() => props.isProcessing, (newVal) => {
+  // 如果开始处理，发送处理中的状态
+  if (newVal) {
+    emit('status-change', 'processing')
+  } else {
+    // 处理完成，但保持上传图片
+    if (uploadedImage.value) {
+      emit('status-change', 'uploaded')
+    } else {
+      emit('status-change', 'stopped')
+    }
+  }
+})
+
+// 处理流加载事件
+const handleStreamLoaded = () => {
+  console.log('视频流加载成功')
+  
+  // 确保当前URL不是空白图像
+  const currentSrc = streamImageElement.value?.src || ''
+  if (currentSrc === 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7') {
+    console.log('忽略空白图像加载事件')
+    return
+  }
+  
+  isLoading.value = false
+  isStreaming.value = true
+  streamError.value = null
+  
+  // 清除已上传的图片
+  uploadedImage.value = null
+  
+  // 通知父组件流已就绪
+  emit('stream-ready')
+  emit('status-change', 'online')
+}
+
+// 处理流错误事件
+const handleStreamError = (event: Event) => {
+  const currentSrc = streamImageElement.value?.src || ''
+  const expectedUrl = props.streamUrl
+  
+  // 如果没有URL或正在显示空白图像，则不是真正的错误
+  if (!expectedUrl || 
+      currentSrc === 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' || 
+      !currentSrc.includes(expectedUrl)) {
+    isLoading.value = false
+    isStreaming.value = false
+    return
+  }
+  
+  // 正常错误处理
+  isLoading.value = false
+  isStreaming.value = false
+  streamError.value = '加载视频流失败'
+  
+  // 发送错误事件，包含更多信息
+  emit('stream-error', {
+    message: '加载视频流失败',
+    url: expectedUrl,
+    currentSrc,
+    timestamp: new Date().toISOString()
+  })
+  emit('status-change', 'error')
 }
 
 // 开启/关闭视频流
-async function toggleStream() {
+const toggleStream = () => {
+  console.log('切换流状态，当前状态:', isStreaming.value)
+  
+  // 标记为手动操作
+  isManualToggle.value = true
+  
   if (isStreaming.value) {
-    stopStream()
+    // 强制停止流
+    console.log('强制停止流')
+    isStreaming.value = false
+    streamError.value = null
+    
+    if (streamImageElement.value) {
+      streamImageElement.value.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    }
+    
+    // 停止时触发状态变更
+    emit('status-change', 'stopped')
   } else {
-    await startStream()
+    // 强制开始流
+    if (!props.streamUrl) {
+      $q.notify({
+        type: 'warning',
+        message: '未提供视频流地址',
+        position: 'top'
+      })
+      return
+    }
+    
+    console.log('强制开始流')
+    isLoading.value = true
+    
+    if (streamImageElement.value) {
+      streamImageElement.value.src = props.streamUrl
+    }
+    
+    // 清除上传的图片
+    uploadedImage.value = null
+    
+    // 开始时触发状态变更
+    emit('status-change', 'connecting')
   }
 }
 
 // 开启视频流
-async function startStream() {
-  try {
-    const constraints = {
-      video: {
-        deviceId: selectedDevice.value ? { exact: selectedDevice.value } : undefined,
-        width: selectedResolution.value?.width || 1280,
-        height: selectedResolution.value?.height || 720,
-        focusMode: autoFocus.value ? 'continuous' : 'manual',
-        exposureMode: autoExposure.value ? 'continuous' : 'manual'
-      }
-    }
-
-    currentStream = await navigator.mediaDevices.getUserMedia(constraints)
-    videoElement.value.srcObject = currentStream
-    isStreaming.value = true
-
-  } catch (error) {
-    console.error('启动视频流失败:', error)
-    $q.notify({
-      type: 'negative',
-      message: '启动摄像头失败',
-      position: 'top'
-    })
+const startStream = () => {
+  console.log('尝试开启视频流:', props.streamUrl)
+  
+  if (!props.streamUrl || props.streamUrl.trim() === '') {
+    isLoading.value = false
+    isStreaming.value = false
+    streamError.value = '未提供视频流地址'
+    
+    console.log('未提供视频流地址或地址为空')
+    emit('error', { message: '未提供视频流地址' })
+    emit('status-change', 'error')
+    return
+  }
+  
+  isLoading.value = true
+  streamError.value = null
+  
+  // 虽然不更新设备状态，但是UI上应该显示为正在连接
+  // emit('status-change', 'connecting')
+  
+  if (streamImageElement.value) {
+    // 设置流地址，事件处理器会处理加载完成和错误
+    console.log('设置视频元素源:', props.streamUrl)
+    streamImageElement.value.src = props.streamUrl
+    
+    // 清除上传的图片
+    uploadedImage.value = null
+  } else {
+    console.log('视频元素未找到')
+    isLoading.value = false
+    streamError.value = '视频元素未找到'
+    emit('error', { message: '视频元素未找到' })
+    emit('status-change', 'error')
   }
 }
 
 // 停止视频流
-function stopStream() {
-  if (currentStream) {
-    currentStream.getTracks().forEach(track => track.stop())
-    currentStream = null
-  }
-  if (videoElement.value) {
-    videoElement.value.srcObject = null
-  }
+const stopStream = () => {
+  console.log('执行停止视频流')
+  
+  // 先更新状态，确保UI立即响应
   isStreaming.value = false
+  streamError.value = null
+  
+  // 停止帧处理
+  stopFrameProcessing()
+  
+  // 然后清空视频元素的src
+  if (streamImageElement.value) {
+    // 使用空白图像停止视频流
+    console.log('清空视频源')
+    streamImageElement.value.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+  }
+  
+  // 不发送status-change事件，避免将摄像头设为离线
+  console.log('视频流已停止，isStreaming =', isStreaming.value)
 }
 
 // 拍照
-function captureImage() {
-  if (!isStreaming.value) return
+const captureImage = () => {
+  if (props.isProcessing) {
+    $q.notify({
+      type: 'warning',
+      message: '正在处理中，请等待完成',
+      position: 'top'
+    })
+    return
+  }
 
-  const video = videoElement.value
-  const canvas = canvasElement.value
-  const context = canvas.getContext('2d')
+  if (!isStreaming.value && !uploadedImage.value) {
+    $q.notify({
+      type: 'warning',
+      message: '摄像头未就绪',
+      position: 'top'
+    })
+    return
+  }
 
-  // 设置canvas尺寸与视频流相同
-  canvas.width = video.videoWidth
-  canvas.height = video.videoHeight
+  try {
+    // 发出捕获事件，让父组件处理拍照逻辑
+    emit('capture', {
+      timestamp: new Date().toISOString(),
+      source: 'camera'
+    })
+  } catch (error) {
+    console.error('捕获图像失败:', error)
+    emit('error', { 
+      message: '捕获图像失败',
+      error: error instanceof Error ? error.message : String(error)
+    })
+  }
+}
 
-  // 将视频帧绘制到canvas
-  context.drawImage(video, 0, 0, canvas.width, canvas.height)
+// 触发文件上传
+const triggerFileUpload = () => {
+  if (fileInput.value) {
+    fileInput.value.click()
+  }
+}
 
-  // 获取图像数据
-  const imageData = canvas.toDataURL('image/png')
-
-  // 发出捕获事件
+// 使用上传的图片
+const useUploadedImage = () => {
+  if (!uploadedImage.value) {
+    $q.notify({
+      type: 'warning',
+      message: '没有上传的图片',
+      position: 'top'
+    })
+    return
+  }
+  
+  // 重新发送捕获事件，让父组件知道要处理这张图片
   emit('capture', {
-    imageData,
+    imageData: uploadedImage.value,
     timestamp: new Date().toISOString(),
     resolution: {
-      width: canvas.width,
-      height: canvas.height
-    }
+      width: 0, // 尺寸会在图片加载后确定
+      height: 0
+    },
+    source: 'upload',
+    fileName: 'reprocessed-image.png' // 使用固定文件名
   })
-
+  
   $q.notify({
     type: 'positive',
-    message: '图像已捕获',
+    message: '图片准备好进行处理',
     position: 'top'
   })
 }
 
-// 处理设备变更
-async function handleDeviceChange() {
-  if (isStreaming.value) {
-    stopStream()
-    await startStream()
+// 处理文件上传
+const handleFileUpload = (event: Event) => {
+  if (props.isProcessing) {
+    $q.notify({
+      type: 'warning',
+      message: '正在处理中，请等待完成',
+      position: 'top'
+    })
+    return
+  }
+
+  const target = event.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  
+  const file = target.files[0]
+  if (!file.type.includes('image/')) {
+    $q.notify({
+      type: 'negative',
+      message: '请上传图片文件',
+      position: 'top'
+    })
+    return
+  }
+  
+  try {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target && typeof e.target.result === 'string') {
+        // 停止当前流，如果有的话
+        if (isStreaming.value) {
+          stopStream()
+        }
+        
+        // 显示上传的图片
+        uploadedImage.value = e.target.result
+        
+        // 发出捕获事件
+        emit('capture', {
+          imageData: e.target.result,
+          timestamp: new Date().toISOString(),
+          source: 'upload',
+          fileName: file.name
+        })
+        
+        // 更新状态
+        emit('status-change', 'uploaded')
+        
+        // 重置文件输入
+        if (fileInput.value) {
+          fileInput.value.value = ''
+        }
+      }
+    }
+    
+    reader.onerror = () => {
+      emit('error', { 
+        message: '图片读取失败',
+        fileName: file.name,
+        error: reader.error ? reader.error.message : '未知错误'
+      })
+    }
+    
+    reader.readAsDataURL(file)
+  } catch (error) {
+    console.error('处理上传文件失败:', error)
+    emit('error', { 
+      message: '处理上传文件失败',
+      error: error instanceof Error ? error.message : String(error)
+    })
   }
 }
 
-// 处理分辨率变更
-async function handleResolutionChange() {
-  if (isStreaming.value) {
-    stopStream()
-    await startStream()
-  }
+// 简化帧处理开始函数
+const startFrameProcessing = () => {
+  console.log('通知后端开始帧处理')
+  processingFrames = true
+  
+  // 触发状态变更
+  emit('status-change', 'processing')
 }
 
-// 更新相机设置
-async function updateCameraSettings() {
-  if (isStreaming.value) {
-    stopStream()
-    await startStream()
-  }
+// 简化帧处理停止函数
+const stopFrameProcessing = () => {
+  console.log('通知后端停止帧处理')
+  processingFrames = false
+  
+  // 触发状态变更
+  emit('status-change', 'stopped')
 }
 
 // 组件挂载时
-onMounted(async () => {
-  await getVideoDevices()
-  selectedResolution.value = resolutionOptions[1] // 默认选择720p
+onMounted(() => {
+  // 只有在提供了有效的流URL时才自动开始预览
+  if (props.streamUrl && props.streamUrl.trim() !== '') {
+    // 延迟启动预览，确保组件已完全渲染
+    setTimeout(() => {
+      startStream()
+    }, 500)
+  }
 })
 
 // 组件卸载时
 onUnmounted(() => {
+  // 确保停止所有活动
   stopStream()
+  
+  // 清理图片URL
+  if (uploadedImage.value && uploadedImage.value.startsWith('blob:')) {
+    URL.revokeObjectURL(uploadedImage.value)
+  }
+  
+  // 重置所有状态
+  isStreaming.value = false
+  isLoading.value = false
+  streamError.value = null
+  uploadedImage.value = null
 })
-
-// 定义事件
-const emit = defineEmits(['capture'])
 </script>
 
 <style lang="scss" scoped>
@@ -279,21 +561,77 @@ const emit = defineEmits(['capture'])
     border-radius: 4px;
     overflow: hidden;
 
-    .video-stream {
+    img.video-stream {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-
-      &.is-recording {
-        border: 2px solid var(--q-negative);
+      object-fit: contain;
+    }
+    
+    .loading-overlay,
+    .error-overlay,
+    .no-camera-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      z-index: 10;
+    }
+    
+    .error-overlay {
+      background: rgba(150, 0, 0, 0.3);
+    }
+    
+    .no-camera-overlay {
+      background: rgba(0, 0, 0, 0.6);
+    }
+    
+    .uploaded-image-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      
+      .uploaded-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      
+      .uploaded-image-info {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 4px;
+        border-radius: 4px;
+        z-index: 20;
       }
     }
   }
 
   .camera-controls {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     gap: 8px;
+    
+    .upload-actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
   }
 }
 </style>

@@ -15,6 +15,10 @@ export class ApiService {
     this.setupInterceptors();
   }
 
+  getBaseUrl() {
+    return this.client.defaults.baseURL;
+  }
+
   private setupInterceptors() {
     // 请求拦截器
     this.client.interceptors.request.use(
@@ -34,7 +38,7 @@ export class ApiService {
       (error) => {
         if (error.response) {
           const status = error.response.status;
-          const message = error.response.data?.message || '请求失败';
+          const message = error.response.data?.message || error.response.data?.detail || '请求失败';
           
           switch (status) {
             case 401:

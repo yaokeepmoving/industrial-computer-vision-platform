@@ -6,15 +6,6 @@ export enum DatasetType {
   OCR = 'ocr'
 }
 
-// 标注框
-export interface BBox {
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation?: number
-}
-
 // 数据集
 export interface Dataset {
   id: number
@@ -35,26 +26,14 @@ export interface Image {
   createdAt: string
 }
 
-// 标注数据
-export interface AnnotationLabel {
-  id: string
-  type: 'text_region' | 'character'
-  bbox: BBox
-  label?: string
-  confidence?: number
-}
-// 保存标注请求
+// 保存标注请求 - 使用 Annotorious 格式
 export interface SaveAnnotationRequest {
-  labels: AnnotationLabel[]
+  annotations: any[] // 使用 Annotorious 的原生格式
 }
-
-// 标注状态
-export type AnnotationStatus = 'pending' | 'in_progress' | 'completed'
 
 // 获取标注响应
 export interface GetAnnotationResponse {
-  annotations: AnnotationLabel[]
-  status: AnnotationStatus
+  annotations: any[] // 使用 Annotorious 的原生格式
 }
 
 // 创建数据集请求
@@ -138,12 +117,23 @@ export class AnnotationService {
   // 标注管理
   async getImageAnnotation(imageId: number): Promise<GetAnnotationResponse> {
     try {
-      return await apiService.get<GetAnnotationResponse>(
+      const response = await apiService.get<any>(
         `/annotation/images/${imageId}/annotation`
       )
+      
+      // 如果后端返回的数据包含 annotations 字段，直接返回
+      if (response && response.annotations) {
+        return {
+          annotations: response.annotations
+        }
+      }
+      
+      // 否则返回空数组
+      return { annotations: [] }
     } catch (error) {
       console.error('Failed to get annotations:', error)
-      throw error
+      // 出错时返回空数组
+      return { annotations: [] }
     }
   }
 
@@ -156,18 +146,6 @@ export class AnnotationService {
       )
     } catch (error) {
       console.error('Failed to save annotations:', error)
-      throw error
-    }
-  }
-
-  async deleteAnnotation(imageId: number, annotationId: string): Promise<void> {
-    try {
-      console.log('Deleting annotation:', { imageId, annotationId })
-      await apiService.delete(
-        `/annotation/images/${imageId}/annotations/${annotationId}`
-      )
-    } catch (error) {
-      console.error('Failed to delete annotation:', error)
       throw error
     }
   }

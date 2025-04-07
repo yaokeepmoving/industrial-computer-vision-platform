@@ -18,7 +18,7 @@
       <q-tab name="pipeline">
         <div class="row items-center">
           <q-icon name="account_tree" class="q-mr-sm" />
-          <span>管道处理</span>
+          <span>流水线处理</span>
         </div>
       </q-tab>
     </q-tabs>
@@ -35,7 +35,7 @@
       </q-tab-panel>
 
       <q-tab-panel name="pipeline" class="q-pa-none">
-        <!-- <PipelineOperation /> -->
+        <PipelineOperation />
       </q-tab-panel>
     </q-tab-panels>
   </q-page>
@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import SingleOperation from '@/components/cv/SingleOperation.vue'
-// import PipelineOperation from '@/components/cv/PipelineOperation.vue'
+import PipelineOperation from '@/components/cv/PipelineOperation.vue'
 
 const activeTab = ref('single')
 </script>
@@ -52,7 +52,6 @@ const activeTab = ref('single')
 <style lang="scss" scoped>
 .cv-operations-page {
   background: var(--dark-page);
-  min-height: 100vh;
 }
 
 :deep(.q-tabs) {
