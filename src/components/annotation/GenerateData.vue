@@ -3,7 +3,7 @@
         @update:model-value="emit('update:modelValue', $event)" persistent maximized class="generate-data-dialog">
         <q-card class="generate-data-card">
             <q-card-section class="row items-center q-pb-none">
-                <div class="text-h6">合成数据</div>
+                <div class="text-h6">{{ t('generateData.title') }}</div>
                 <q-space />
                 <q-btn icon="close" flat round dense @click="handleClose" />
             </q-card-section>
@@ -14,7 +14,7 @@
                     <div class="col-12 col-md-3">
                         <q-card flat bordered>
                             <q-card-section>
-                                <div class="text-subtitle1">源数据集</div>
+                                <div class="text-subtitle1">{{ t('generateData.sourceDataset.title') }}</div>
                                 <div class="text-caption q-mt-sm">
                                     <q-icon name="folder" color="primary" size="sm" />
                                     {{ sourceDataset.name }}
@@ -32,16 +32,16 @@
                             <q-separator />
 
                             <q-card-section>
-                                <div class="text-subtitle1">目标数据集</div>
+                                <div class="text-subtitle1">{{ t('generateData.targetDataset.title') }}</div>
                                 <q-option-group v-model="targetDatasetOption" :options="[
-                                    { label: '创建新数据集', value: 'new' },
-                                    { label: '使用现有数据集', value: 'existing' },
-                                    { label: '添加到源数据集', value: 'source' }
+                                    { label: t('generateData.targetDataset.newOption'), value: 'new' },
+                                    { label: t('generateData.targetDataset.existingOption'), value: 'existing' },
+                                    { label: t('generateData.targetDataset.sourceOption'), value: 'source' }
                                 ]" color="primary" />
 
                                 <template v-if="targetDatasetOption === 'new'">
                                     <q-input v-model="newDatasetName" label="新数据集名称" class="q-mt-sm" dense
-                                        :rules="[val => !!val || '请输入数据集名称']" />
+                                        :rules="[val => !!val || t('generateData.targetDataset.new.name.required')]" />
                                     <q-select 
                                         v-model="newDatasetType" 
                                         :options="datasetTypeOptions" 
@@ -56,17 +56,17 @@
                                 <template v-if="targetDatasetOption === 'existing'">
                                     <q-select v-model="selectedTargetDataset" :options="availableDatasets" label="选择数据集"
                                         option-label="name" option-value="id" class="q-mt-sm" dense
-                                        :rules="[val => !!val || '请选择数据集']" />
+                                        :rules="[val => !!val || t('generateData.targetDataset.existing.select')]" />
                                 </template>
                             </q-card-section>
 
                             <q-separator />
 
                             <q-card-section>
-                                <div class="text-subtitle1">生成选项</div>
-                                <q-checkbox v-model="includeAnnotations" label="包含标注数据" />
+                                <div class="text-subtitle1">{{ t('generateData.generateOptions.title') }}</div>
+                                <q-checkbox v-model="includeAnnotations" :label="t('generateData.generateOptions.includeAnnotations')" />
                                 <div class="text-caption q-mt-xs">
-                                    选中后将同时生成图片和标注数据
+                                    {{ t('generateData.generateOptions.includeAnnotationsHint') }}
                                 </div>
                             </q-card-section>
                         </q-card>
@@ -76,15 +76,15 @@
                     <div class="col-12 col-md-4">
                         <q-card flat bordered>
                             <q-card-section class="operations-section">
-                                <div class="text-subtitle1">选择处理操作</div>
+                                <div class="text-subtitle1">{{ t('generateData.operations.title') }}</div>
                                 <!-- 可选操作列表 -->
-                                <div class="text-caption q-mb-sm">可用的处理操作</div>
+                                <div class="text-caption q-mb-sm">{{ t('generateData.operations.available') }}</div>
                                 <div class="available-operations">
                                     <!-- 单步处理操作 -->
                                     <q-chip v-for="op in filteredOperations" :key="'op-' + op.id" clickable
                                         class="operation-chip" @click="addInstance(op, 'operation')">
                                         {{ op.name }}
-                                        <q-badge color="primary" class="q-ml-xs" floating>单步</q-badge>
+                                        <q-badge color="primary" class="q-ml-xs" floating>{{ t('generateData.operations.single') }}</q-badge>
                                         <q-tooltip v-if="op.description" anchor="bottom middle" self="center middle">
                                             {{ op.description }}
                                         </q-tooltip>
@@ -94,7 +94,7 @@
                                     <q-chip v-for="pipeline in pipelines" :key="'pl-' + pipeline.id" clickable
                                         class="operation-chip" @click="addInstance(pipeline, 'pipeline')">
                                         {{ pipeline.name }}
-                                        <q-badge color="purple" class="q-ml-xs" floating>流水线</q-badge>
+                                        <q-badge color="purple" class="q-ml-xs" floating>{{ t('generateData.operations.pipeline') }}</q-badge>
                                         <q-tooltip v-if="pipeline.description" anchor="bottom middle" self="center middle">
                                             {{ pipeline.description }}
                                         </q-tooltip>
@@ -102,7 +102,7 @@
                                 </div>
                                 <q-separator />
                                 <!-- 已选操作列表 -->
-                                <div class="text-caption q-mb-sm">已选操作 ({{ selectedInstances.length }})</div>
+                                <div class="text-caption q-mb-sm">{{ t('generateData.operations.selected') }} ({{ selectedInstances.length }})</div>
                                 <q-list separator>
                                     <q-item v-for="(instance, index) in selectedInstances" :key="instance.id">
                                         <q-item-section>
@@ -110,7 +110,7 @@
                                                 {{ instance.name }}
                                                 <q-badge :color="instance.type === 'operation' ? 'primary' : 'purple'"
                                                     class="q-ml-sm">
-                                                    {{ instance.type === 'operation' ? '单步' : '流水线' }}
+                                                    {{ instance.type === 'operation' ? t('generateData.operations.single') : t('generateData.operations.pipeline') }}
                                                 </q-badge>
                                             </q-item-label>
                                         </q-item-section>
@@ -118,14 +118,14 @@
                                             <div class="row items-center">
                                                 <q-btn round flat dense icon="settings"
                                                     @click="configureInstance(instance)">
-                                                    <q-tooltip>配置参数</q-tooltip>
+                                                    <q-tooltip>{{ t('generateData.operations.configure') }}</q-tooltip>
                                                 </q-btn>
                                                 <q-btn round flat dense icon="content_copy"
                                                     @click="duplicateInstance(instance)">
-                                                    <q-tooltip>复制操作</q-tooltip>
+                                                    <q-tooltip>{{ t('generateData.operations.duplicate') }}</q-tooltip>
                                                 </q-btn>
                                                 <q-btn round flat dense icon="delete" @click="removeInstance(index)">
-                                                    <q-tooltip>移除</q-tooltip>
+                                                    <q-tooltip>{{ t('generateData.operations.remove') }}</q-tooltip>
                                                 </q-btn>
                                             </div>
                                         </q-item-section>
@@ -139,13 +139,15 @@
                     <div class="col-12 col-md-5">
                         <q-card flat bordered>
                             <q-card-section>
-                                <div class="text-subtitle1">预览效果</div>
+                                <div class="text-subtitle1">{{ t('generateData.preview.title') }}</div>
                                 <div class="preview-container">
                                     <div class="preview-pipeline" v-for="(preview, index) in previewImages" :key="index">
                                         <div class="pipeline-header">
-                                            <q-badge color="primary" outline>源图像 #{{ index + 1 }}</q-badge>
+                                            <q-badge color="primary" outline>
+                                                {{ t('generateData.preview.sourceImage') }} #{{ index + 1 }}
+                                            </q-badge>
                                             <span class="image-info">
-                                                ID: {{ preview.sourceImageId }}
+                                                {{ t('generateData.preview.imageId', { id: preview.sourceImageId }) }}
                                             </span>
                                         </div>
                                         
@@ -153,7 +155,7 @@
                                             <!-- Original image -->
                                             <div class="source-image-container">
                                                 <div class="stage-header">
-                                                    <span class="stage-name">原始图像</span>
+                                                    <span class="stage-name">{{ t('generateData.preview.originalImage') }}</span>
                                                 </div>
                                                 <div class="stage-content">
                                                     <AnnotationPreview 
@@ -179,7 +181,7 @@
                                                         :color="operation.operationType === 'operation' ? 'primary' : 'purple'"
                                                         class="q-ml-xs"
                                                     >
-                                                        {{ operation.operationType === 'operation' ? '单步' : '流水线' }}
+                                                        {{ t(`generateData.preview.operationResult.${operation.operationType === 'operation' ? 'single' : 'pipeline'}`) }}
                                                     </q-badge>
                                                 </div>
                                                 <div class="operation-content">
@@ -200,12 +202,12 @@
                             <q-card-section>
                                 <div class="row q-col-gutter-sm">
                                     <div class="col">
-                                        <q-btn color="primary" icon="visibility" label="预览效果" @click="generatePreview"
-                                            :loading="previewLoading" :disable="!canPreview" />
+                                        <q-btn color="primary" icon="visibility" :label="t('generateData.actions.preview')" 
+                                            @click="generatePreview" :loading="previewLoading" :disable="!canPreview" />
                                     </div>
                                     <div class="col">
-                                        <q-btn color="positive" icon="auto_awesome" label="生成数据" @click="generateData"
-                                            :loading="generating" :disable="!canGenerate" />
+                                        <q-btn color="positive" icon="auto_awesome" :label="t('generateData.actions.generate')" 
+                                            @click="generateData" :loading="generating" :disable="!canGenerate" />
                                     </div>
                                 </div>
                             </q-card-section>
@@ -218,7 +220,7 @@
             <q-dialog v-model="showProgressDialog" persistent>
                 <q-card style="min-width: 350px">
                     <q-card-section>
-                        <div class="text-h6">正在生成数据</div>
+                        <div class="text-h6">{{ t('generateData.progress.title') }}</div>
                     </q-card-section>
 
                     <q-card-section>
@@ -232,9 +234,10 @@
                     </q-card-section>
 
                     <q-card-actions align="right">
-                        <q-btn flat label="取消" color="negative" @click="cancelGeneration"
-                            :disable="!canCancelGeneration" v-if="generating" />
-                        <q-btn flat label="关闭" color="primary" @click="closeProgressDialog" v-if="!generating" />
+                        <q-btn flat :label="t('generateData.progress.cancel')" color="negative" 
+                            @click="cancelGeneration" :disable="!canCancelGeneration" v-if="generating" />
+                        <q-btn flat :label="t('generateData.progress.close')" color="primary" 
+                            @click="closeProgressDialog" v-if="!generating" />
                     </q-card-actions>
                 </q-card>
             </q-dialog>
@@ -243,13 +246,13 @@
             <q-dialog v-model="showConfigDialog" persistent>
                 <q-card style="min-width: 400px; max-width: 600px">
                     <q-card-section>
-                        <div class="text-h6">{{ currentInstance?.name }} - 参数配置</div>
+                        <div class="text-h6">{{ t('generateData.configuration.title', { name: currentInstance?.name }) }}</div>
                     </q-card-section>
 
                     <q-card-section class="q-pt-none">
                         <div v-if="currentInstance">
                             <!-- 输入参数配置 -->
-                            <div class="text-subtitle2 q-my-sm">输入参数</div>
+                            <div class="text-subtitle2 q-my-sm">{{ t('generateData.configuration.sections.input') }}</div>
                             <div v-for="param in currentInstance.inputParams" :key="param.name" class="q-mb-md">
                                 <div class="text-subtitle2">{{ param.name }}</div>
                                 <div class="text-caption q-mb-xs">{{ param.description }}</div>
@@ -257,17 +260,19 @@
                                 <!-- 根据参数类型渲染不同的输入控件 -->
                                 <template v-if="param.type === 'number'">
                                     <q-input v-model.number="currentInstance.params[param.name]" type="number" dense
-                                        :label="param.required ? '必填' : '可选'" :hint="`默认值: ${param.default}`" />
+                                        :label="param.required ? t('generateData.configuration.params.required') : t('generateData.configuration.params.optional')"
+                                        :hint="t('generateData.configuration.params.defaultValue', { value: param.default })" />
                                 </template>
 
                                 <template v-else-if="param.type === 'text'">
                                     <q-input v-model="currentInstance.params[param.name]" dense
-                                        :label="param.required ? '必填' : '可选'" :hint="`默认值: ${param.default}`" />
+                                        :label="param.required ? t('generateData.configuration.params.required') : t('generateData.configuration.params.optional')"
+                                        :hint="t('generateData.configuration.params.defaultValue', { value: param.default })" />
                                 </template>
 
                                 <template v-else-if="param.type === 'boolean'">
                                     <q-toggle v-model="currentInstance.params[param.name]" :label="param.name"
-                                        :hint="`默认值: ${param.default ? '是' : '否'}`" />
+                                        :hint="t('generateData.configuration.params.defaultValue', { value: param.default ? t('generateData.configuration.params.yes') : t('generateData.configuration.params.no') })" />
                                 </template>
 
                                 <template v-else-if="param.type === ParamType.IMAGE">
@@ -275,18 +280,18 @@
                                         <div class="col-12">
                                             <div class="text-caption q-mb-sm">
                                                 <q-icon name="info" size="xs" color="info" class="q-mr-xs" />
-                                                选择使用数据集图片或上传自定义图片
+                                                {{ t('generateData.configuration.imageParam.hint') }}
                                             </div>
                                             <q-radio 
                                                 v-model="currentInstance.params[param.name]" 
                                                 val="$IMAGE" 
-                                                label="使用数据集图片"
+                                                :label="t('generateData.configuration.imageParam.useDataset')"
                                                 :disable="!isDatasetImageParam(param.name)"
                                             />
                                             <q-radio 
                                                 v-model="currentInstance.params[param.name]" 
                                                 val="custom" 
-                                                label="上传图片" 
+                                                :label="t('generateData.configuration.imageParam.upload')" 
                                             />
                                         </div>
                                         
@@ -295,7 +300,7 @@
                                                 v-model="currentInstance.params[`${param.name}_file`]"
                                                 dense
                                                 accept="image/*,.bmp"
-                                                :label="param.required ? '必选' : '可选'"
+                                                :label="param.required ? t('generateData.configuration.params.required') : t('generateData.configuration.params.optional')"
                                             >
                                                 <template v-slot:prepend>
                                                     <q-icon name="image" />
@@ -310,18 +315,18 @@
                                         <div class="col-12">
                                             <div class="text-caption q-mb-sm">
                                                 <q-icon name="info" size="xs" color="info" class="q-mr-xs" />
-                                                选择使用数据集标注或输入自定义标注
+                                                {{ t('generateData.configuration.annotationParam.hint') }}
                                             </div>
                                             <q-radio 
                                                 v-model="currentInstance.params[param.name]" 
                                                 val="$ANNOTATION" 
-                                                label="使用数据集标注"
+                                                :label="t('generateData.configuration.annotationParam.useDataset')"
                                                 :disable="!isDatasetAnnotationParam(param.name)"
                                             />
                                             <q-radio 
                                                 v-model="currentInstance.params[param.name]" 
                                                 val="custom" 
-                                                label="自定义" 
+                                                :label="t('generateData.configuration.annotationParam.custom')" 
                                             />
                                         </div>
                                         
@@ -330,8 +335,8 @@
                                                 v-model="currentInstance.params[`${param.name}_data`]"
                                                 type="textarea"
                                                 dense
-                                                :label="param.required ? '必填' : '可选'"
-                                                :hint="'输入自定义标注数据（JSON格式）'"
+                                                :label="param.required ? t('generateData.configuration.params.required') : t('generateData.configuration.params.optional')"
+                                                :hint="t('generateData.configuration.annotationParam.customHint')"
                                             />
                                         </div>
                                     </div>
@@ -339,15 +344,15 @@
                             </div>
 
                             <!-- 输出参数配置 -->
-                            <div class="text-subtitle2 q-my-sm">输出参数</div>
+                            <div class="text-subtitle2 q-my-sm">{{ t('generateData.configuration.sections.output') }}</div>
                             <div class="text-caption q-mb-sm">
                                 <q-icon name="info" size="xs" color="info" class="q-mr-xs" />
-                                选择要保存到数据集的输出参数
+                                {{ t('generateData.configuration.output.hint') }}
                             </div>
 
                             <!-- 图片输出参数选择 -->
                             <div class="q-mb-md">
-                                <div class="text-weight-medium">图片输出</div>
+                                <div class="text-weight-medium">{{ t('generateData.configuration.output.image.title') }}</div>
                                 <q-option-group
                                     v-model="currentInstance.params.outputImageParam"
                                     :options="getParamsByType(ParamType.IMAGE, 'output').map(p => ({
@@ -359,13 +364,13 @@
                                     :disable="!hasImageOutput"
                                 />
                                 <div class="text-caption q-mt-xs" v-if="!hasImageOutput">
-                                    此操作没有图片输出参数
+                                    {{ t('generateData.configuration.output.image.noOutput') }}
                                 </div>
                             </div>
 
                             <!-- 标注输出参数选择 -->
                             <div class="q-mb-md">
-                                <div class="text-weight-medium">标注输出</div>
+                                <div class="text-weight-medium">{{ t('generateData.configuration.output.annotation.title') }}</div>
                                 <q-option-group
                                     v-model="currentInstance.params.outputAnnotationParam"
                                     :options="getParamsByType(ParamType.OBJECT, 'output').map(p => ({
@@ -377,15 +382,15 @@
                                     :disable="!hasObjectOutput"
                                 />
                                 <div class="text-caption q-mt-xs" v-if="!hasObjectOutput">
-                                    此操作没有标注输出参数
+                                    {{ t('generateData.configuration.output.annotation.noOutput') }}
                                 </div>
                             </div>
                         </div>
                     </q-card-section>
 
                     <q-card-actions align="right">
-                        <q-btn flat label="重置" color="warning" @click="resetParams" />
-                        <q-btn flat label="关闭" color="primary" v-close-popup />
+                        <q-btn flat :label="t('generateData.configuration.actions.reset')" color="warning" @click="resetParams" />
+                        <q-btn flat :label="t('generateData.configuration.actions.close')" color="primary" v-close-popup />
                     </q-card-actions>
                 </q-card>
             </q-dialog>
@@ -396,12 +401,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, PropType } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { AnnotationService, Dataset, DatasetType } from '../../services/annotation'
 import type { Image } from '../../services/annotation'
 import { CVOperation, CVOperationService, ParamType } from '../../services/cv_operation'
 import { Pipeline, PipelineService } from '../../services/pipeline'
 import { W3CAnnotation } from '@annotorious/openseadragon'
 import AnnotationPreview from './AnnotationPreview.vue'
+
+const { t } = useI18n()
 
 // 在 OperationInstance 接口中添加参数映射
 interface OperationInstance extends Partial<CVOperation>, Partial<Pipeline> {
@@ -509,8 +517,8 @@ const getAnnotatedCount = () => {
 
 // 数据集类型选项
 const datasetTypeOptions = [
-    { label: '文本区域', value: DatasetType.TEXT_REGION },
-    { label: 'OCR识别', value: DatasetType.OCR }
+    { label: t('annotation.datasetTypes.textRegion'), value: DatasetType.TEXT_REGION },
+    { label: t('annotation.datasetTypes.ocr'), value: DatasetType.OCR }
 ]
 
 // 加载数据
@@ -533,7 +541,7 @@ const loadData = async () => {
         console.error('加载数据失败:', error)
         $q.notify({
             type: 'negative',
-            message: '加载数据失败，请重试',
+            message: t('generateData.notifications.loadError'),
             position: 'top'
         })
     }
@@ -687,7 +695,7 @@ const generatePreview = async () => {
         console.error('生成预览失败:', error)
         $q.notify({
             type: 'negative',
-            message: error instanceof Error ? error.message : '生成预览失败，请重试',
+            message: error instanceof Error ? error.message : t('generateData.notifications.previewError'),
             position: 'top'
         })
     } finally {
@@ -704,7 +712,7 @@ const generateData = async () => {
         generating.value = true
         showProgressDialog.value = true
         progressValue.value = 0
-        progressText.value = '准备中...'
+        progressText.value = t('common.loading')
         progressStatus.value = '正在准备数据...'
 
         // Prepare target dataset
@@ -764,24 +772,24 @@ const generateData = async () => {
 
         // Complete
         progressValue.value = 1
-        progressStatus.value = '数据生成完成!'
-        progressText.value = `成功生成 ${processedCount} 张图片`
+        progressStatus.value = t('generateData.notifications.generateSuccess')
+        progressText.value = t('generateData.notifications.generateSuccess')
         
         emit('update:datasets')
         
         $q.notify({
             type: 'positive',
-            message: '数据生成成功',
+            message: t('generateData.notifications.generateSuccess'),
             position: 'top'
         })
     } catch (error) {
         console.error('生成数据失败:', error)
-        progressStatus.value = '生成失败'
-        progressText.value = error instanceof Error ? error.message : '未知错误'
+        progressStatus.value = t('generateData.notifications.generateError')
+        progressText.value = error instanceof Error ? error.message : t('common.error')
         
         $q.notify({
             type: 'negative',
-            message: '生成数据失败，请查看详情',
+            message: t('generateData.notifications.generateError'),
             position: 'top'
         })
     } finally {
@@ -812,8 +820,8 @@ const cancelGeneration = async () => {
         // Set a flag to indicate cancelation request
         const willCancel = await new Promise<boolean>((resolve) => {
             $q.dialog({
-                title: '取消生成',
-                message: '确定要取消当前的生成任务吗？',
+                title: t('generateData.notifications.cancelConfirm.title'),
+                message: t('generateData.notifications.cancelConfirm.message'),
                 cancel: true,
                 persistent: true
             }).onOk(() => resolve(true))
@@ -822,8 +830,8 @@ const cancelGeneration = async () => {
         
         if (willCancel) {
             // Simply stop the process - no actual API call needed
-            progressText.value = '已取消任务'
-            progressStatus.value = '任务已取消'
+            progressText.value = t('generateData.notifications.cancelConfirm.canceled')
+            progressStatus.value = t('generateData.notifications.cancelConfirm.canceled')
             generating.value = false
             
             // Close the dialog after a delay

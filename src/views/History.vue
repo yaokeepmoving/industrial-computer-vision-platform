@@ -11,7 +11,7 @@
                   v-model="filters.searchText"
                   dense
                   outlined
-                  label="搜索文字"
+                  :label="t('history.searchText')"
                   class="full-width"
                   @keyup.enter="searchRecords"
                 />
@@ -22,7 +22,8 @@
                   :options="['全部', '合格', '不合格']"
                   dense
                   outlined
-                  label="检测结果"
+                  :option-label="(val) => t(`history.status.${val === '全部' ? 'all' : (val === '合格' ? 'pass' : 'fail')}`)"
+                  :label="t('history.status.title')"
                   class="full-width"
                   @update:model-value="searchRecords"
                 />
@@ -32,7 +33,7 @@
                   :model-value="formatDateRangeDisplay(filters.dateRange)"
                   dense
                   outlined
-                  label="时间范围"
+                  :label="t('history.dateRange')"
                   class="full-width"
                   readonly
                 >
@@ -46,7 +47,14 @@
                 </q-input>
               </div>
               <div class="col-12 col-md-2">
-                <q-btn color="primary" icon="search" label="搜索" class="full-width" @click="searchRecords" />
+                <div class="row q-col-gutter-sm">
+                  <div class="col">
+                    <q-btn color="primary" icon="search" :label="t('history.search')" class="full-width" @click="searchRecords" />
+                  </div>
+                  <div class="col">
+                    <q-btn color="secondary" icon="download" :label="t('history.export_excel')" class="full-width" @click="exportToExcel" />
+                  </div>
+                </div>
               </div>
             </div>
           </q-card-section>
@@ -95,7 +103,7 @@
               <template v-slot:no-data>
                 <div class="full-width row flex-center q-pa-md">
                   <q-icon name="info" size="2em" color="grey-7" />
-                  <span class="text-grey-7 q-ml-sm">无历史记录数据</span>
+                  <span class="text-grey-7 q-ml-sm">{{ t('history.noData') }}</span>
                 </div>
               </template>
             </q-table>
@@ -108,7 +116,7 @@
     <q-dialog v-model="detailDialog" persistent>
       <q-card style="width: 700px; max-width: 90vw">
         <q-card-section class="row items-center">
-          <div class="text-h6">检测记录详情</div>
+          <div class="text-h6">{{ t('history.detail.title') }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -117,18 +125,18 @@
           <div class="row q-col-gutter-md">
             <!-- 检测图像 -->
             <div class="col-12 col-md-6">
-              <div class="text-subtitle2 q-mb-sm">原始图像</div>
+              <div class="text-subtitle2 q-mb-sm">{{ t('history.detail.originalImage') }}</div>
               <div class="image-container">
-                <img :src="selectedRecord.imagePath" alt="检测图像" class="detection-image" v-if="selectedRecord.imagePath" />
-                <div class="no-image-placeholder" v-else>无图像</div>
+                <img :src="selectedRecord.imagePath" :alt="t('history.detail.originalImage')" class="detection-image" v-if="selectedRecord.imagePath" />
+                <div class="no-image-placeholder">{{ t('history.detail.noImage') }}</div>
               </div>
             </div>
             
             <!-- 处理后图像 (如果有) -->
             <div class="col-12 col-md-6" v-if="selectedRecord.processedImagePath">
-              <div class="text-subtitle2 q-mb-sm">处理后图像</div>
+              <div class="text-subtitle2 q-mb-sm">{{ t('history.detail.processedImage') }}</div>
               <div class="image-container">
-                <img :src="selectedRecord.processedImagePath" alt="处理后图像" class="detection-image" />
+                <img :src="selectedRecord.processedImagePath" :alt="t('history.detail.processedImage')" class="detection-image" />
               </div>
             </div>
             
@@ -137,14 +145,14 @@
               <q-list separator>
                 <q-item>
                   <q-item-section>
-                    <q-item-label caption>检测时间</q-item-label>
+                    <q-item-label caption>{{ t('history.detail.timestamp') }}</q-item-label>
                     <q-item-label>{{ formatDateTime(selectedRecord.timestamp) }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 
                 <q-item>
                   <q-item-section>
-                    <q-item-label caption>检测结果</q-item-label>
+                    <q-item-label caption>{{ t('history.detail.status') }}</q-item-label>
                     <q-item-label>
                       <q-chip
                         :color="selectedRecord.status === 'pass' ? 'positive' : 'negative'"
@@ -159,21 +167,21 @@
                 
                 <q-item>
                   <q-item-section>
-                    <q-item-label caption>识别文字</q-item-label>
-                    <q-item-label>{{ selectedRecord.text || '无法识别' }}</q-item-label>
+                    <q-item-label caption>{{ t('history.detail.text') }}</q-item-label>
+                    <q-item-label>{{ selectedRecord.text || t('history.detail.noText') }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 
                 <q-item>
                   <q-item-section>
-                    <q-item-label caption>置信度</q-item-label>
+                    <q-item-label caption>{{ t('history.detail.confidence') }}</q-item-label>
                     <q-item-label>{{ selectedRecord.confidence ? `${selectedRecord.confidence.toFixed(1)}%` : 'N/A' }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 
                 <q-item v-if="selectedRecord.deviceName">
                   <q-item-section>
-                    <q-item-label caption>使用设备</q-item-label>
+                    <q-item-label caption>{{ t('history.detail.device') }}</q-item-label>
                     <q-item-label>{{ selectedRecord.deviceName }}</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -183,7 +191,7 @@
         </q-card-section>
         
         <q-card-actions align="right">
-          <q-btn flat label="关闭" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -193,12 +201,12 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm">确定要删除此检测记录吗?</span>
+          <span class="q-ml-sm">{{ t('history.delete.confirm') }}</span>
         </q-card-section>
         
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="deleteRecord" v-close-popup />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.delete')" color="negative" @click="deleteRecord" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -210,7 +218,10 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { detectionService, Detection } from '@/services/detection'
 import { formatDate } from '@/utils/date'
+import * as XLSX from 'xlsx'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const $q = useQuasar()
 
 // 状态
@@ -233,15 +244,15 @@ const columns = [
   { 
     name: 'timestamp', 
     align: 'left' as const, 
-    label: '检测时间', 
+    label: t('history.columns.timestamp'), 
     field: 'timestamp', 
     format: formatDateTime 
   },
-  { name: 'text', align: 'left' as const, label: '识别文字', field: 'text' },
-  { name: 'confidence', align: 'center' as const, label: '置信度', field: 'confidence' },
-  { name: 'status', align: 'center' as const, label: '检测结果', field: 'status' },
-  { name: 'deviceName', align: 'left' as const, label: '使用设备', field: 'deviceName' },
-  { name: 'actions', align: 'center' as const, label: '操作', field: 'actions' }
+  { name: 'text', align: 'left' as const, label: t('history.columns.text'), field: 'text' },
+  { name: 'confidence', align: 'center' as const, label: t('history.columns.confidence'), field: 'confidence' },
+  { name: 'status', align: 'center' as const, label: t('history.columns.status'), field: 'status' },
+  { name: 'deviceName', align: 'left' as const, label: t('history.columns.device'), field: 'deviceName' },
+  { name: 'actions', align: 'center' as const, label: t('history.columns.actions'), field: 'actions' }
 ]
 
 // 分页配置
@@ -288,9 +299,9 @@ function formatDateTime(dateStr: string): string {
 
 function statusText(status: string): string {
   switch (status) {
-    case 'pass': return '合格'
-    case 'fail': return '不合格'
-    case 'unknown': return '未知'
+    case 'pass': return t('history.status.pass')
+    case 'fail': return t('history.status.fail')
+    case 'unknown': return t('history.status.unknown')
     default: return status
   }
 }
@@ -426,6 +437,91 @@ function formatDateRangeDisplay(dateRange: any): string {
   } catch (e) {
     // 如果日期解析失败，直接使用原始字符串
     return `${from} 至 ${to}`;
+  }
+}
+
+// 定义导出Excel的函数
+const exportToExcel = async () => {
+  try {
+    // 显示加载提示
+    $q.loading.show({
+      message: t('history.export.loading'),
+      spinnerColor: 'secondary',
+      backgroundColor: 'dark',
+    })
+
+    // 获取所有符合当前过滤条件的记录
+    const exportParams = {
+      // 使用-1表示不分页，获取所有记录
+      page: 1,
+      perPage: 100, // 改为100，符合后端API限制
+      searchText: filters.searchText || undefined,
+      status: filters.status !== '全部' ? filters.status : undefined,
+      dateFrom: filters.dateFrom || undefined,
+      dateTo: filters.dateTo || undefined
+    }
+
+    const response = await detectionService.getDetections(exportParams)
+    const exportData = response.items
+
+    if (exportData.length === 0) {
+      $q.notify({
+        type: 'warning',
+        message: t('history.export.noData'),
+        position: 'top'
+      })
+      $q.loading.hide()
+      return
+    }
+
+    // 准备Excel数据
+    const data = exportData.map(record => ({
+      [t('history.export.columns.timestamp')]: formatDateTime(record.timestamp),
+      [t('history.export.columns.text')]: record.text || '',
+      [t('history.export.columns.confidence')]: record.confidence !== null ? `${record.confidence.toFixed(1)}%` : 'N/A',
+      [t('history.export.columns.status')]: statusText(record.status),
+      [t('history.export.columns.device')]: record.deviceName || '',
+      [t('history.export.columns.imageUrl')]: record.imagePath || '',
+      [t('history.export.columns.processedImageUrl')]: record.processedImagePath || ''
+    }))
+
+    // 创建工作簿
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '检测历史记录')
+
+    // 设置列宽
+    const colWidths = [
+      { wch: 20 }, // 检测时间
+      { wch: 30 }, // 识别文字
+      { wch: 10 }, // 置信度
+      { wch: 10 }, // 检测结果
+      { wch: 20 }, // 使用设备
+      { wch: 30 }, // 图像URL
+      { wch: 30 }  // 处理后图像URL
+    ]
+    ws['!cols'] = colWidths
+
+    // 导出文件
+    const fileName = `${t('history.export.fileName')}_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+
+    $q.notify({
+      type: 'positive',
+      message: t('history.export.success', { count: data.length }),
+      position: 'top',
+      timeout: 3000
+    })
+  } catch (error) {
+    console.error('导出失败:', error)
+    $q.notify({
+      type: 'negative',
+      message: t('history.export.failed'),
+      position: 'top',
+      timeout: 3000
+    })
+  } finally {
+    $q.loading.hide()
   }
 }
 </script>

@@ -6,7 +6,7 @@
       dense
       round
       icon="menu"
-      aria-label="菜单"
+      :aria-label="t('common.menu')"
       class="menu-button"
       @click="$emit('toggleLeftDrawer')"
     />
@@ -16,7 +16,7 @@
       <div class="title-container">
         <metal-textures type="brushed" size="full" class="title-background">
           <div class="title-content">
-            工业铸字识别系统
+            {{ t('common.systemName') }}
             <q-badge
               color="accent"
               text-color="white"
@@ -38,9 +38,9 @@
         :offset="[0, 10]"
         class="status-tooltip"
       >
-        <div class="tooltip-title">相机列表</div>
+        <div class="tooltip-title">{{ t('status.cameraList') }}</div>
         <div v-if="cameras.length === 0" class="tooltip-content">
-          没有配置相机设备
+          {{ t('status.noCameras') }}
         </div>
         <div v-else class="tooltip-content">
           <template v-for="(camera, index) in cameras" :key="camera.id">
@@ -57,7 +57,7 @@
           size="sm" 
           class="q-mr-xs"
         />
-        <span class="status-label">相机</span>
+        <span class="status-label">{{ t('status.camera') }}</span>
         <span class="status-value" :class="cameraStatus.class">{{ cameraStatus.text }}</span>
       </div>
       
@@ -68,9 +68,9 @@
         :offset="[0, 10]"
         class="status-tooltip"
       >
-        <div class="tooltip-title">模型列表</div>
+        <div class="tooltip-title">{{ t('status.modelList') }}</div>
         <div v-if="loadedModels.length === 0" class="tooltip-content">
-          没有加载任何模型
+          {{ t('status.noModels') }}
         </div>
         <div v-else class="tooltip-content">
           <template v-for="(model, index) in loadedModels" :key="model.id">
@@ -87,7 +87,7 @@
           size="sm" 
           class="q-mr-xs"
         />
-        <span class="status-label">模型</span>
+        <span class="status-label">{{ t('status.model') }}</span>
         <span class="status-value" :class="modelStatus.class">{{ modelStatus.text }}</span>
       </div>
       
@@ -98,9 +98,9 @@
         :offset="[0, 10]"
         class="status-tooltip"
       >
-        <div class="tooltip-title">设备列表</div>
+        <div class="tooltip-title">{{ t('status.deviceList') }}</div>
         <div v-if="devices.length === 0" class="tooltip-content">
-          没有配置控制设备
+          {{ t('status.noDevices') }}
         </div>
         <div v-else class="tooltip-content">
           <template v-for="(device, index) in devices" :key="device.id">
@@ -117,7 +117,7 @@
           size="sm" 
           class="q-mr-xs"
         />
-        <span class="status-label">设备</span>
+        <span class="status-label">{{ t('status.device') }}</span>
         <span class="status-value" :class="deviceStatus.class">{{ deviceStatus.text }}</span>
       </div>
     </div>
@@ -131,7 +131,9 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useDeviceStore } from '../../stores/device'
 import { settingsService } from '../../services/settings'
 import { modelService } from '../../services/model'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const deviceStore = useDeviceStore()
 const allDevices = ref([])
 const loadedModels = ref([])
@@ -168,9 +170,9 @@ const devices = computed(() => {
 // 获取状态文本
 const getStatusText = (status) => {
   switch (status) {
-    case 'online': return '在线'
-    case 'offline': return '离线'
-    case 'error': return '错误'
+    case 'online': return t('status.online')
+    case 'offline': return t('status.offline')
+    case 'error': return t('status.error')
     default: return status
   }
 }
@@ -190,13 +192,13 @@ const cameraStatus = computed(() => {
   const onlineCount = cameras.value.filter(c => c.status === 'online').length
   
   if (cameras.value.length === 0) {
-    return { text: '未配置', class: 'status-idle' }
+    return { text: t('status.noCameras'), class: 'status-idle' }
   } else if (onlineCount === 0) {
-    return { text: '未连接', class: 'status-error' }
+    return { text: t('status.disconnected'), class: 'status-error' }
   } else if (onlineCount < cameras.value.length) {
-    return { text: `部分在线 (${onlineCount}/${cameras.value.length})`, class: 'status-warning' }
+    return { text: `${t('status.partiallyConnected')} (${onlineCount}/${cameras.value.length})`, class: 'status-warning' }
   } else {
-    return { text: '已连接', class: 'status-normal' }
+    return { text: t('status.connected'), class: 'status-normal' }
   }
 })
 
@@ -204,12 +206,12 @@ const cameraStatus = computed(() => {
 const modelStatus = computed(() => {
   if (loadedModels.value.length > 0) {
     return { 
-      text: `已加载 (${loadedModels.value.length})`, 
+      text: `${t('status.loaded')} (${loadedModels.value.length})`, 
       class: 'status-normal' 
     }
   } else {
     return { 
-      text: '未加载', 
+      text: t('status.notLoaded'), 
       class: 'status-error' 
     }
   }
@@ -220,13 +222,13 @@ const deviceStatus = computed(() => {
   const onlineCount = devices.value.filter(d => d.status === 'online').length
   
   if (devices.value.length === 0) {
-    return { text: '未配置', class: 'status-idle' }
+    return { text: t('status.noDevices'), class: 'status-idle' }
   } else if (onlineCount === 0) {
-    return { text: '未连接', class: 'status-error' }
+    return { text: t('status.disconnected'), class: 'status-error' }
   } else if (onlineCount < devices.value.length) {
-    return { text: `部分在线 (${onlineCount}/${devices.value.length})`, class: 'status-warning' }
+    return { text: `${t('status.partiallyConnected')} (${onlineCount}/${devices.value.length})`, class: 'status-warning' }
   } else {
-    return { text: '已连接', class: 'status-normal' }
+    return { text: t('status.connected'), class: 'status-normal' }
   }
 })
 

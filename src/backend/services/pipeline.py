@@ -301,85 +301,68 @@ class PipelineService:
         return [r.result for r in results]
 
     def apply_pipeline(self, pipeline_id: int, input_params: Dict[str, Any], enable_log: bool = False, timeout: int = 30) -> Dict[str, Any]:
-        """添加超时参数，限制执行时间"""
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Pipeline执行超时")
-        
-        # 设置超时处理
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout)
-        
+        """执行流水线处理"""
+        # 重置日志列表
+        self.logs = []
         try:
-            # 重置日志列表
-            self.logs = []
-            try:
-                # 获取流水线定义
-                pipeline = self.get_pipeline(pipeline_id)
-                if not pipeline:
-                    raise ValueError(f"未找到流水线: {pipeline_id}")
+            # 获取流水线定义
+            pipeline = self.get_pipeline(pipeline_id)
+            if not pipeline:
+                raise ValueError(f"未找到流水线: {pipeline_id}")
+            
+            # 确保input_params不为None
+            if input_params is None:
+                input_params = {}
                 
-                # 确保input_params不为None
-                if input_params is None:
-                    input_params = {}
-                    
-                # 安全地记录输入参数 - 避免直接记录可能导致的错误
-                safe_params = {}
-                for k, v in input_params.items():
-                    if isinstance(v, np.ndarray):
-                        safe_params[k] = f"<numpy.ndarray shape={v.shape}>"
-                    else:
-                        try:
-                            safe_params[k] = str(v)[:100]  # 限制长度
-                        except:
-                            safe_params[k] = "<无法转换为字符串的对象>"
-                
-                logger.info(f"流水线 {pipeline_id} 的输入参数: {safe_params}")
-                
-                # 验证输入参数
-                self._validate_input_params(pipeline, input_params)
-                
-                # 执行流水线处理
-                if enable_log:
-                    result = self._execute_pipeline_with_logs(pipeline, input_params, self.logs, enable_log)
+            # 安全地记录输入参数 - 避免直接记录可能导致的错误
+            safe_params = {}
+            for k, v in input_params.items():
+                if isinstance(v, np.ndarray):
+                    safe_params[k] = f"<numpy.ndarray shape={v.shape}>"
                 else:
-                    result = self._execute_pipeline(pipeline, input_params)
+                    try:
+                        safe_params[k] = str(v)[:100]  # 限制长度
+                    except:
+                        safe_params[k] = "<无法转换为字符串的对象>"
+            
+            logger.info(f"流水线 {pipeline_id} 的输入参数: {safe_params}")
+            
+            # 验证输入参数
+            self._validate_input_params(pipeline, input_params)
+            
+            # 执行流水线处理
+            if enable_log:
+                result = self._execute_pipeline_with_logs(pipeline, input_params, self.logs, enable_log)
+            else:
+                result = self._execute_pipeline(pipeline, input_params)
+            
+            # 构建输出
+            output_params = {}
+            for output_param in pipeline.output_params:
+                param_name = output_param['name']
+                param_type = output_param['type']
                 
-                # 构建输出
-                output_params = {}
-                for output_param in pipeline.output_params:
-                    param_name = output_param['name']
-                    param_type = output_param['type']
-                    
-                    if param_name not in result:
-                        raise ValueError(f"流水线执行未生成输出参数: {param_name}")
-                    
-                    # 对于图像类型的输出，保持为numpy数组格式
-                    if param_type == 'image' and isinstance(result[param_name], np.ndarray):
-                        # 保留numpy数组，不转换为base64
-                        output_params[param_name] = result[param_name]
-                    else:
-                        output_params[param_name] = result[param_name]
+                if param_name not in result:
+                    raise ValueError(f"流水线执行未生成输出参数: {param_name}")
                 
-                return {
-                    'outputParams': output_params,
-                    'logs': self.logs if enable_log else None
-                }
-                
-            except Exception as e:
-                error_msg = f"流水线执行错误: {str(e)}"
-                logger.error(error_msg)
-                if enable_log:
-                    self._add_log(self.logs, "ERROR", error_msg)
-                raise
-        except TimeoutError as e:
-            error_msg = f"流水线执行超时: {str(e)}"
+                # 对于图像类型的输出，保持为numpy数组格式
+                if param_type == 'image' and isinstance(result[param_name], np.ndarray):
+                    # 保留numpy数组，不转换为base64
+                    output_params[param_name] = result[param_name]
+                else:
+                    output_params[param_name] = result[param_name]
+            
+            return {
+                'outputParams': output_params,
+                'logs': self.logs if enable_log else None
+            }
+            
+        except Exception as e:
+            error_msg = f"流水线执行错误: {str(e)}"
             logger.error(error_msg)
             if enable_log:
                 self._add_log(self.logs, "ERROR", error_msg)
             raise
-        finally:
-            # 取消超时
-            signal.alarm(0)
 
     def _execute_pipeline_with_logs(self, pipeline: Pipeline, input_params: Dict[str, Any], 
                                    logs: List[Dict[str, Any]], enable_log: bool = False) -> Dict[str, Any]:

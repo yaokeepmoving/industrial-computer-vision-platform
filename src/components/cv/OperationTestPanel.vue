@@ -9,13 +9,13 @@
       <q-card-section class="test-panel-header row items-center q-py-sm">
         <div class="row items-center">
           <q-icon name="science" size="24px" color="info" class="q-mr-sm" />
-          <div class="text-h6">操作测试</div>
+          <div class="text-h6">{{ t('cv.operationTestPanel.title') }}</div>
         </div>
         <q-space />
         <q-btn-group flat>
-          <q-btn :loading="testing" color="primary" icon="play_arrow" label="运行" @click="runTest" />
+          <q-btn :loading="testing" color="primary" icon="play_arrow" :label="t('cv.operationTestPanel.actions.run')" @click="runTest" />
           <q-btn flat icon="close" @click="emit('update:modelValue', false)">
-            <q-tooltip>关闭</q-tooltip>
+            <q-tooltip>{{ t('cv.operationTestPanel.actions.close') }}</q-tooltip>
           </q-btn>
         </q-btn-group>
       </q-card-section>
@@ -28,7 +28,7 @@
               <q-card-section class="panel-section-header">
                 <div class="text-subtitle1">
                   <q-icon name="input" class="q-mr-sm" />
-                  输入参数
+                  {{ t('cv.operationTestPanel.input.title') }}
                 </div>
               </q-card-section>
               <q-separator />
@@ -50,7 +50,7 @@
                         :placeholder="param.description"
                         outlined
                         dense
-                        :rules="[val => !param.required || !!val || '必填项']"
+                        :rules="[val => !param.required || !!val || t('cv.operationTestPanel.validation.required')]"
                       />
                     </template>
                     
@@ -61,7 +61,7 @@
                         :placeholder="param.description"
                         outlined
                         dense
-                        :rules="[val => !param.required || val !== null || '必填项']"
+                        :rules="[val => !param.required || val !== null || t('cv.operationTestPanel.validation.required')]"
                       />
                     </template>
                     
@@ -78,7 +78,7 @@
                         outlined
                         dense
                         accept="image/*"
-                        :rules="[val => !param.required || !!val || '必填项']"
+                        :rules="[val => !param.required || !!val || t('cv.operationTestPanel.validation.required')]"
                       >
                         <template v-slot:prepend>
                           <q-icon name="attach_file" />
@@ -99,17 +99,17 @@
                       <q-input
                         v-model="inputValues[param.name]"
                         type="textarea"
-                        :placeholder="param.description + ' (JSON格式)'"
+                        :placeholder="param.description + t('cv.operationTestPanel.input.jsonFormat')"
                         outlined
                         dense
                         :rules="[
-                          val => !param.required || !!val || '必填项',
+                          val => !param.required || !!val || t('cv.operationTestPanel.validation.required'),
                           val => {
                             try {
                               if (val) JSON.parse(val)
                               return true
                             } catch (e) {
-                              return '请输入有效的JSON格式'
+                              return t('cv.operationTestPanel.validation.invalidJson')
                             }
                           }
                         ]"
@@ -127,7 +127,7 @@
               <q-card-section class="panel-section-header">
                 <div class="text-subtitle1">
                   <q-icon name="output" class="q-mr-sm" />
-                  输出结果
+                  {{ t('cv.operationTestPanel.output.title') }}
                 </div>
               </q-card-section>
               <q-separator />
@@ -189,13 +189,16 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { CVOperation, ParamType, cvOperationService } from '@/services/cv_operation'
+import { useI18n } from 'vue-i18n'
+import { CVOperation, ParamType } from '@/services/cv_operation'
+import { cvOperationService } from '@/services/cv_operation'
 import { useQuasar } from 'quasar'
 
+const { t } = useI18n()
 const $q = useQuasar()
 const props = defineProps<{
   modelValue: boolean
-  operation: Partial<CVOperation>
+  operation: CVOperation
 }>()
 
 const emit = defineEmits<{

@@ -2,7 +2,7 @@
   <div class="camera-preview">
     <div v-if="loading" class="camera-loading">
       <q-spinner color="primary" size="3em" />
-      <div class="q-mt-sm">加载摄像头...</div>
+      <div class="q-mt-sm">{{ t('cameraPreview.loading') }}</div>
     </div>
     <div v-else-if="error" class="camera-error">
       <q-icon name="error" color="negative" size="3em" />
@@ -11,7 +11,7 @@
     <img 
       ref="cameraImg" 
       :src="streamUrl" 
-      alt="Camera Stream" 
+      :alt="t('cameraPreview.stream.alt')" 
       @error="handleStreamError" 
       @load="handleStreamLoaded"
     />
@@ -20,7 +20,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { cameraService } from '../../services/camera';
+
+const { t } = useI18n();
 
 // Props
 const props = defineProps<{
@@ -62,7 +65,7 @@ const handleStreamLoaded = () => {
 const handleStreamError = () => {
   loading.value = false;
   error.value = true;
-  errorMessage.value = '无法连接到摄像头';
+  errorMessage.value = t('cameraPreview.error.connection');
   status.value = 'offline';
   emit('status-change', 'offline');
 };
@@ -78,7 +81,7 @@ onMounted(() => {
       status.value = statusResult.status as any;
       emit('status-change', status.value);
     } catch (e) {
-      console.error('获取摄像头状态出错:', e);
+      console.error(t('cameraPreview.error.status'), e);
     }
   }, 10000);
 });

@@ -4,13 +4,13 @@
     <div class="controls-panel">
       <!-- 缩放控制 -->
       <q-btn round flat dense color="white" icon="remove" @click="zoomOut">
-        <q-tooltip>缩小</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.zoomOut') }}</q-tooltip>
       </q-btn>
 
       <div class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</div>
 
       <q-btn round flat dense color="white" icon="add" @click="zoomIn">
-        <q-tooltip>放大</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.zoomIn') }}</q-tooltip>
       </q-btn>
 
       <div class="control-divider-vertical"></div>
@@ -18,35 +18,35 @@
       <!-- 文本区域标注按钮 -->
       <q-btn round flat dense :color="currentAnnotationType === 'text_region' && isDrawing ? 'negative' : 'white'"
         icon="polyline" @click="activateDrawingTool('text_region')">
-        <q-tooltip>文本区域 (多边形)</q-tooltip>
+        <q-tooltip>{{ t('annotator.tools.textRegion') }}</q-tooltip>
       </q-btn>
 
       <!-- 带字轮毂标注按钮 -->
       <q-btn round flat dense :color="currentAnnotationType === 'wheel_text' && isDrawing ? 'negative' : 'white'"
         icon="crop_square" @click="activateDrawingTool('wheel_text')">
-        <q-tooltip>带字轮毂 (矩形)</q-tooltip>
+        <q-tooltip>{{ t('annotator.tools.wheelText') }}</q-tooltip>
       </q-btn>
 
       <!-- 取消绘制按钮 -->
       <q-btn round flat dense color="negative" icon="close" @click="cancelDrawing" v-if="isDrawing">
-        <q-tooltip>取消绘制</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.cancelDrawing') }}</q-tooltip>
       </q-btn>
 
       <div class="control-divider-vertical"></div>
 
       <!-- 删除按钮 -->
       <q-btn round flat dense color="white" icon="delete" @click="deleteSelected" :disable="!selectedAnnotation">
-        <q-tooltip>删除选中</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.deleteSelected') }}</q-tooltip>
       </q-btn>
 
       <!-- 保存按钮 -->
       <q-btn round flat dense color="white" icon="save" @click="saveAnnotations">
-        <q-tooltip>保存标注</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.save') }}</q-tooltip>
       </q-btn>
 
       <!-- 重新加载按钮 -->
       <q-btn round flat dense color="white" icon="refresh" @click="loadAnnotations">
-        <q-tooltip>重新加载</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.reload') }}</q-tooltip>
       </q-btn>
     </div>
 
@@ -62,9 +62,11 @@ import OpenSeadragon from 'openseadragon'
 import { createOSDAnnotator } from '@annotorious/openseadragon'
 import '@annotorious/openseadragon/annotorious-openseadragon.css'
 import { AnnotationService } from '../../services/annotation'
+import { useI18n } from 'vue-i18n'
 
 // Get Quasar instance
 const $q = useQuasar()
+const { t } = useI18n()
 const annotationService = new AnnotationService()
 
 // Define props
@@ -105,7 +107,7 @@ let anno: any = null
 // 标注类型配置
 const annotationTypeConfig = {
   text_region: {
-    tool: 'rectangle',
+    tool: 'polygon',
     label: '文本区域',
     color: '#2196f3'
   },
@@ -342,10 +344,9 @@ const loadAnnotations = async () => {
     }
   } catch (error) {
     console.error('Failed to load annotations:', error)
-    annotations.value = []
     $q.notify({
       type: 'negative',
-      message: '加载标注失败，请重试',
+      message: t('annotator.notifications.loadFailed'),
       position: 'top'
     })
   }
@@ -380,14 +381,14 @@ const saveAnnotations = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '保存成功',
+      message: t('annotator.notifications.saveSuccess'),
       position: 'top'
     })
   } catch (error) {
     console.error('Failed to save annotations:', error)
     $q.notify({
       type: 'negative',
-      message: '保存标注失败，请重试',
+      message: t('annotator.notifications.saveFailed'),
       position: 'top'
     })
   }
@@ -413,7 +414,7 @@ const deleteSelected = async () => {
     console.error('Failed to delete annotation:', error)
     $q.notify({
       type: 'negative',
-      message: '删除标注失败，请重试',
+      message: t('annotator.notifications.deleteFailed'),
       position: 'top'
     })
 

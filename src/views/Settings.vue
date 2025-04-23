@@ -5,25 +5,39 @@
       <div class="col-12 col-lg-6">
         <q-card class="settings-card">
           <q-card-section>
-            <div class="text-h6">系统参数</div>
+            <div class="text-h6">{{ t('settings.system.title') }}</div>
             <q-list class="q-mt-md">
               <q-item>
                 <q-item-section>
-                  <q-item-label>自动保存间隔</q-item-label>
-                  <q-slider v-model="systemSettings.auto_save_interval" :min="1" :max="60" :step="1" label
-                    :label-value=" `${systemSettings.auto_save_interval}分钟`" class="q-mt-md" @change="saveSystemSettings" />
+                  <q-item-label>{{ t('settings.system.language') }}</q-item-label>
+                  <q-select
+                    v-model="currentLanguage"
+                    :options="languageOptions.map(opt => opt.value)"
+                    :option-label="getLanguageLabel"
+                    outlined
+                    dense
+                    class="q-mt-sm"
+                    @update:model-value="handleLanguageChange"
+                  />
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-item-label>数据保留时间</q-item-label>
+                  <q-item-label>{{ t('settings.system.autoSaveInterval') }}</q-item-label>
+                  <q-slider v-model="systemSettings.auto_save_interval" :min="1" :max="60" :step="1" label
+                    :label-value="`${systemSettings.auto_save_interval}${t('common.minutes')}`" class="q-mt-md" @change="saveSystemSettings" />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-item-label>{{ t('settings.system.dataRetention') }}</q-item-label>
                   <q-select v-model="systemSettings.data_retention" :options="['7天', '30天', '90天', '180天', '365天']"
                     outlined dense class="q-mt-sm" @update:model-value="saveSystemSettings" />
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-item-label>告警阈值</q-item-label>
+                  <q-item-label>{{ t('settings.system.alarmThreshold') }}</q-item-label>
                   <q-input v-model.number="systemSettings.alarm_threshold" type="number" outlined dense suffix="%"
                     class="q-mt-sm" @change="saveSystemSettings" />
                 </q-item-section>
@@ -35,24 +49,24 @@
         <!-- MES集成配置 -->
         <q-card class="settings-card q-mt-md">
           <q-card-section>
-            <div class="text-h6">MES集成</div>
+            <div class="text-h6">{{ t('settings.mes.title') }}</div>
             <q-list class="q-mt-md">
               <q-item>
                 <q-item-section>
-                  <q-item-label>服务器地址</q-item-label>
+                  <q-item-label>{{ t('settings.mes.serverUrl') }}</q-item-label>
                   <q-input v-model="mesSettings.server_url" outlined dense placeholder="http://mes.example.com"
                     class="q-mt-sm" />
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-item-label>API密钥</q-item-label>
+                  <q-item-label>{{ t('settings.mes.apiKey') }}</q-item-label>
                   <q-input v-model="mesSettings.api_key" outlined dense type="password" class="q-mt-sm" />
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-btn color="primary" icon="sync" label="测试连接" class="q-mt-md" @click="saveMesSettings" />
+                  <q-btn color="primary" icon="sync" :label="t('settings.mes.testConnection')" class="q-mt-md" @click="saveMesSettings" />
                 </q-item-section>
               </q-item>
             </q-list>
@@ -65,13 +79,13 @@
         <q-card class="settings-card">
           <q-card-section>
             <div class="row items-center justify-between">
-            <div class="text-h6">设备管理</div>
+              <div class="text-h6">{{ t('settings.devices.title') }}</div>
               <div>
-                <q-toggle v-model="disableAutoCheck" label="禁用自动检测" dense color="warning" />
+                <q-toggle v-model="disableAutoCheck" :label="t('settings.devices.disableAutoCheck')" dense color="warning" />
                 <q-btn flat round dense icon="refresh" color="primary" @click="refreshDeviceStatus">
-                  <q-tooltip>刷新设备状态</q-tooltip>
+                  <q-tooltip>{{ t('settings.devices.refreshStatus') }}</q-tooltip>
                 </q-btn>
-                <q-btn color="primary" icon="add" label="添加设备" @click="showAddDeviceDialog = true" />
+                <q-btn color="primary" icon="add" :label="t('settings.devices.addDevice')" @click="showAddDeviceDialog = true" />
                       </div>
                     </div>
 
@@ -79,10 +93,10 @@
             <div class="q-mt-md">
               <q-tabs v-model="activeDeviceTab" dense class="text-primary" active-color="primary"
                 indicator-color="primary" align="justify">
-                <q-tab name="all" label="全部" />
-                <q-tab name="camera" label="相机" />
-                <q-tab name="light" label="光源" />
-                <q-tab name="plc" label="控制器" />
+                <q-tab name="all" :label="t('settings.devices.all')" />
+                <q-tab name="camera" :label="t('settings.devices.camera')" />
+                <q-tab name="light" :label="t('settings.devices.light')" />
+                <q-tab name="plc" :label="t('settings.devices.plc')" />
               </q-tabs>
                       </div>
 
@@ -101,10 +115,9 @@
                   <q-item-label caption>
                     <span
                       :class="{ 'text-positive': device.status === 'online', 'text-negative': device.status === 'error', 'text-grey': device.status === 'offline' }">
-                      {{ deviceStatusText(device.status) }}
+                      {{ t(`settings.devices.status.${device.status}`) }}
                     </span>
                     <span v-if="device.model"> | {{ device.model }}</span>
-                    <!-- 改进配置信息显示，优先使用存储的URL -->
                     <template v-if="device.type === 'camera'">
                       <span v-if="device.config.stream_url">
                         | URL: {{ device.config.stream_url }}
@@ -123,18 +136,18 @@
                   <q-btn-group flat>
                     <q-btn v-if="device.type === 'camera'" flat round dense icon="visibility" color="blue-5"
                       @click="previewCamera(device)">
-                      <q-tooltip>预览摄像头</q-tooltip>
+                      <q-tooltip>{{ t('settings.devices.preview.title') }}</q-tooltip>
                     </q-btn>
                     <q-btn v-if="device.type === 'camera'" flat round dense
                       :icon="device.status === 'online' ? 'link_off' : 'link'"
                       :color="device.status === 'online' ? 'positive' : 'grey'" @click="toggleDeviceStatus(device)">
-                      <q-tooltip>{{ device.status === 'online' ? '设为离线' : '设为在线' }}</q-tooltip>
+                      <q-tooltip>{{ device.status === 'online' ? t('settings.devices.preview.setOffline') : t('settings.devices.preview.setOnline') }}</q-tooltip>
                     </q-btn>
                     <q-btn flat round dense icon="edit" color="primary" @click="editDevice(device)">
-                      <q-tooltip>编辑设备</q-tooltip>
+                      <q-tooltip>{{ t('settings.devices.preview.edit') }}</q-tooltip>
                     </q-btn>
                     <q-btn flat round dense icon="delete" color="negative" @click="confirmDeleteDevice(device)">
-                      <q-tooltip>删除设备</q-tooltip>
+                      <q-tooltip>{{ t('settings.devices.preview.delete') }}</q-tooltip>
                     </q-btn>
                   </q-btn-group>
                 </q-item-section>
@@ -144,8 +157,8 @@
                 <q-item-section>
                   <div class="text-center text-grey q-pa-md">
                     <q-icon name="devices" size="48px" class="q-mb-md" />
-                    <div>暂无{{ activeDeviceTab === 'all' ? '' : getDeviceTypeLabel(activeDeviceTab) }}设备</div>
-                    <q-btn color="primary" label="添加设备" icon="add" class="q-mt-md"
+                    <div>{{ t('settings.devices.noDevices', { type: activeDeviceTab === 'all' ? '' : getDeviceTypeLabel(activeDeviceTab) }) }}</div>
+                    <q-btn color="primary" :label="t('settings.devices.addDevice')" icon="add" class="q-mt-md"
                       @click="addNewDevice(activeDeviceTab !== 'all' ? activeDeviceTab : 'camera')" />
                       </div>
                 </q-item-section>
@@ -160,7 +173,7 @@
     <q-dialog v-model="showAddDeviceDialog" persistent>
       <q-card style="min-width: 400px">
         <q-card-section class="row items-center">
-          <div class="text-h6">{{ isEditMode ? '编辑设备' : '添加设备' }}</div>
+          <div class="text-h6">{{ t(`settings.devices.form.title.${isEditMode ? 'edit' : 'add'}`) }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup @click="resetDeviceForm" />
         </q-card-section>
@@ -169,36 +182,36 @@
 
         <q-card-section>
           <q-form @submit="saveDevice">
-            <q-input v-model="deviceForm.name" label="设备名称" outlined :rules="[val => !!val || '请输入设备名称']"
+            <q-input v-model="deviceForm.name" :label="t('settings.devices.form.name')" outlined :rules="[val => !!val || t('settings.devices.form.nameRequired')]"
               class="q-mb-md" />
 
             <q-select v-model="deviceForm.type"
               :options="deviceTypes.map(type => ({ label: getDeviceTypeLabel(type), value: type }))" outlined
-              label="设备类型" emit-value map-options class="q-mb-md" />
+              :label="t('settings.devices.form.type')" emit-value map-options class="q-mb-md" />
 
-            <q-input v-model="deviceForm.model" label="设备型号" outlined class="q-mb-md" />
+            <q-input v-model="deviceForm.model" :label="t('settings.devices.form.model')" outlined class="q-mb-md" />
 
             <!-- 设备特有配置 -->
             <div class="q-mb-md">
-              <div class="text-subtitle2 q-mb-sm">设备配置</div>
+              <div class="text-subtitle2 q-mb-sm">{{ t('settings.devices.form.config') }}</div>
 
               <!-- 相机设备配置 -->
               <div v-if="deviceForm.type === 'camera'">
                 <q-item>
                   <q-item-section>
-                    <q-item-label>摄像头类型</q-item-label>
+                    <q-item-label>{{ t('settings.devices.form.camera.type') }}</q-item-label>
                     <q-select v-model="deviceForm.cameraType" :options="[
-                      { label: '本地摄像头', value: 'local' },
-                      { label: 'IP摄像头', value: 'ip' },
-                      { label: 'RTSP流', value: 'rtsp' },
-                      { label: 'HTTP流', value: 'http' }
+                      { label: t('settings.devices.form.camera.types.local'), value: 'local' },
+                      { label: t('settings.devices.form.camera.types.ip'), value: 'ip' },
+                      { label: t('settings.devices.form.camera.types.rtsp'), value: 'rtsp' },
+                      { label: t('settings.devices.form.camera.types.http'), value: 'http' }
                     ]" outlined dense class="q-mt-sm" />
                   </q-item-section>
                 </q-item>
 
                 <q-item v-if="deviceForm.type === 'camera' && deviceForm.cameraType === 'local'">
                   <q-item-section>
-                    <q-item-label>设备ID</q-item-label>
+                    <q-item-label>{{ t('settings.devices.form.camera.deviceId') }}</q-item-label>
                     <q-input v-model="deviceForm.deviceId" type="number" outlined dense placeholder="0"
                       class="q-mt-sm" />
                   </q-item-section>
@@ -206,7 +219,7 @@
 
                 <q-item v-if="deviceForm.type === 'camera' && ['ip', 'rtsp', 'http'].includes(deviceForm.cameraType)">
                   <q-item-section>
-                    <q-item-label>摄像头URL</q-item-label>
+                    <q-item-label>{{ t('settings.devices.form.camera.streamUrl') }}</q-item-label>
                     <q-input v-model="deviceForm.streamUrl" outlined dense
                       :placeholder="getPlaceholderForCameraType(deviceForm.cameraType)" class="q-mt-sm" />
                   </q-item-section>
@@ -215,27 +228,31 @@
 
               <!-- 光源设备配置 -->
               <div v-if="deviceForm.type === 'light'">
-                <q-input v-model="deviceForm.config.port" label="串口" outlined dense class="q-mb-sm" />
-                <q-select v-model="deviceForm.config.mode" :options="['连续', '闪烁', '触发']" label="工作模式" outlined dense />
+                <q-input v-model="deviceForm.config.port" :label="t('settings.devices.form.light.port')" outlined dense class="q-mb-sm" />
+                <q-select v-model="deviceForm.config.mode" :options="[
+                  { label: t('settings.devices.form.light.modes.continuous'), value: 'continuous' },
+                  { label: t('settings.devices.form.light.modes.flash'), value: 'flash' },
+                  { label: t('settings.devices.form.light.modes.trigger'), value: 'trigger' }
+                ]" :label="t('settings.devices.form.light.mode')" outlined dense />
               </div>
 
               <!-- PLC配置 -->
               <div v-if="deviceForm.type === 'plc'">
-                <q-input v-model="deviceForm.config.ip" label="IP地址" outlined dense class="q-mb-sm" />
+                <q-input v-model="deviceForm.config.ip" :label="t('settings.devices.form.plc.ip')" outlined dense class="q-mb-sm" />
                 <div class="row q-col-gutter-sm">
                   <div class="col-6">
-                    <q-input v-model.number="deviceForm.config.rack" type="number" label="机架号" outlined dense />
+                    <q-input v-model.number="deviceForm.config.rack" type="number" :label="t('settings.devices.form.plc.rack')" outlined dense />
                   </div>
                   <div class="col-6">
-                    <q-input v-model.number="deviceForm.config.slot" type="number" label="插槽号" outlined dense />
+                    <q-input v-model.number="deviceForm.config.slot" type="number" :label="t('settings.devices.form.plc.slot')" outlined dense />
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="row justify-end q-mt-md">
-              <q-btn label="取消" flat color="negative" v-close-popup @click="resetDeviceForm" class="q-mr-sm" />
-              <q-btn :label="isEditMode ? '保存' : '添加'" type="submit" color="primary" />
+              <q-btn :label="t('common.cancel')" flat color="negative" v-close-popup @click="resetDeviceForm" class="q-mr-sm" />
+              <q-btn :label="isEditMode ? t('common.save') : t('common.add')" type="submit" color="primary" />
             </div>
           </q-form>
         </q-card-section>
@@ -247,12 +264,12 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="delete" color="negative" text-color="white" />
-          <span class="q-ml-sm">确定要删除设备 "{{ deviceToDelete?.name }}" 吗？</span>
+          <span class="q-ml-sm">{{ t('settings.devices.deleteConfirm', { name: deviceToDelete?.name }) }}</span>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="deleteDevice" v-close-popup />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.delete')" color="negative" @click="deleteDevice" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -261,7 +278,7 @@
     <q-dialog v-model="showCameraPreview" :maximized="false" persistent>
       <q-card style="width: 800px; max-width: 95vw;">
         <q-card-section class="row items-center">
-          <div class="text-h6">{{ selectedCamera?.name || '摄像头' }} 预览</div>
+          <div class="text-h6">{{ t('settings.devices.preview.title', { name: selectedCamera?.name || t('settings.devices.camera') }) }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
@@ -271,17 +288,17 @@
         </q-card-section>
         <q-card-section>
           <div class="text-subtitle2">
-            摄像头状态:
+            {{ t('settings.devices.preview.status') }}:
             <span :class="{
               'text-positive': previewCameraStatus === 'online',
               'text-negative': previewCameraStatus === 'error',
               'text-grey': previewCameraStatus === 'offline'
             }">
-              {{ deviceStatusText(previewCameraStatus) }}
+              {{ t(`settings.devices.status.${previewCameraStatus}`) }}
             </span>
           </div>
           <div class="text-caption">
-            流地址: {{ selectedCamera ? getCameraStreamUrl(selectedCamera) : '' }}
+            {{ t('settings.devices.preview.streamUrl') }}: {{ selectedCamera ? getCameraStreamUrl(selectedCamera) : t('settings.devices.preview.notConfigured') }}
           </div>
         </q-card-section>
       </q-card>
@@ -290,13 +307,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, reactive, computed, onBeforeUnmount, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { settingsService, SystemSettings, MesSettings, Device } from '../services/settings'
 import { cameraService } from '../services/camera'
 import CameraPreview from '../components/common/CameraPreview.vue'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t, locale } = useI18n()
 
 // Device config type definition to fix TypeScript errors
 interface DeviceConfig {
@@ -326,10 +345,11 @@ interface DeviceForm {
 const systemSettings = reactive<SystemSettings>({
   auto_save_interval: 5,
   data_retention: '30天',
-  alarm_threshold: 90
+  alarm_threshold: 90,
+  language: localStorage.getItem('language') || 'zh-CN'
 })
 
-// MES settings with default values
+// MES settings with default values 
 const mesSettings = reactive<MesSettings>({
   server_url: '',
   api_key: ''
@@ -352,7 +372,7 @@ const deviceForm = reactive<DeviceForm>({
     port: '',
     resolution: '',
     format: '',
-    mode: '连续',
+    mode: 'continuous',
     rack: 0,
     slot: 0
   },
@@ -376,10 +396,29 @@ const filteredDevices = computed(() => {
   return devices.value.filter(device => device.type === activeDeviceTab.value)
 })
 
+// 当前语言
+const currentLanguage = ref(localStorage.getItem('language') || 'zh-CN')
+
+// 处理语言切换
+const handleLanguageChange = (newLanguage: string) => {
+  // 保存到localStorage
+  localStorage.setItem('language', newLanguage);
+  // 更新i18n locale
+  locale.value = newLanguage;
+  // 显示成功通知
+  $q.notify({
+    type: 'positive',
+    message: t('settings.notifications.languageChanged'),
+    position: 'top'
+  });
+  // 刷新页面
+  window.location.reload();
+}
+
 // Save system settings
 const saveSystemSettings = async () => {
   $q.loading.show({
-    message: '正在保存系统设置...'
+    message: t('settings.notifications.savingSettings')
   });
   
   try {
@@ -392,14 +431,14 @@ const saveSystemSettings = async () => {
     
     $q.notify({
       type: 'positive',
-      message: '系统设置已保存',
+      message: t('settings.notifications.settingsSaved'),
       position: 'top'
     });
   } catch (error) {
     console.error('Failed to save system settings:', error);
     $q.notify({
       type: 'negative',
-      message: '保存系统设置失败',
+      message: t('settings.notifications.savingFailed'),
       position: 'top'
     });
     
@@ -413,31 +452,29 @@ const saveSystemSettings = async () => {
 // Save MES settings
 const saveMesSettings = async () => {
   $q.loading.show({
-    message: '正在保存MES设置...'
+    message: t('settings.notifications.savingMes')
   });
   
   try {
     const result = await settingsService.updateMesSettings(mesSettings);
     
-    // 保存成功后更新本地数据
     if (result) {
       Object.assign(mesSettings, result);
     }
     
     $q.notify({
       type: 'positive',
-      message: 'MES设置已保存',
+      message: t('settings.notifications.mesSaved'),
       position: 'top'
     });
   } catch (error) {
     console.error('Failed to save MES settings:', error);
     $q.notify({
       type: 'negative',
-      message: '保存MES设置失败',
+      message: t('settings.notifications.mesSavingFailed'),
       position: 'top'
     });
     
-    // 保存失败时重新加载设置
     await loadMesSettings();
   } finally {
     $q.loading.hide();
@@ -452,7 +489,7 @@ const loadDevices = async () => {
     console.error('Failed to load devices:', error)
     $q.notify({
       type: 'negative',
-      message: '加载设备列表失败',
+      message: t('settings.notifications.loadDevicesFailed'),
       position: 'top'
     })
   }
@@ -486,7 +523,7 @@ const editDevice = (device: Device) => {
     port: '',
     resolution: '',
     format: '',
-    mode: '连续',
+    mode: 'continuous',
     rack: 0,
     slot: 0
   }
@@ -506,7 +543,7 @@ const editDevice = (device: Device) => {
       }
     } else if (device.type === 'light') {
       deviceForm.config.port = device.config.port || ''
-      deviceForm.config.mode = device.config.mode || '连续'
+      deviceForm.config.mode = device.config.mode || 'continuous'
     } else if (device.type === 'plc') {
       deviceForm.config.ip = device.config.ip || ''
       deviceForm.config.rack = device.config.rack || 0
@@ -532,7 +569,7 @@ const deleteDevice = async () => {
     await loadDevices()
     $q.notify({
       type: 'positive',
-      message: '设备已删除',
+      message: t('settings.notifications.deviceDeleted'),
       position: 'top'
     })
     showConfirmDeleteDialog.value = false
@@ -540,7 +577,7 @@ const deleteDevice = async () => {
     console.error('Failed to delete device:', error)
     $q.notify({
       type: 'negative',
-      message: '删除设备失败',
+      message: t('settings.notifications.deviceDeleteFailed'),
       position: 'top'
     })
   }
@@ -608,31 +645,25 @@ const saveDevice = async () => {
     }
 
     if (isEditMode.value) {
-      // 更新现有设备
       await settingsService.updateDevice(deviceForm.id, deviceData)
       $q.notify({
         type: 'positive',
-        message: '设备已更新',
+        message: t('settings.notifications.deviceUpdated'),
         position: 'top'
       })
     } else {
-      // 创建新设备
       await settingsService.createDevice(deviceData)
       $q.notify({
         type: 'positive',
-        message: '设备已添加',
+        message: t('settings.notifications.deviceAdded'),
         position: 'top'
       })
     }
 
-    // 重新加载设备列表
     await loadDevices()
-
-    // 关闭对话框并重置表单
     showAddDeviceDialog.value = false
     resetDeviceForm()
 
-    // 检查摄像头状态
     if (deviceForm.type === 'camera') {
       setTimeout(checkActiveCameras, 1000)
     }
@@ -640,7 +671,7 @@ const saveDevice = async () => {
     console.error('保存设备失败:', error)
     $q.notify({
       type: 'negative',
-      message: '保存设备失败',
+      message: t('settings.notifications.deviceSaveFailed'),
       position: 'top'
     })
   }
@@ -658,7 +689,7 @@ const resetDeviceForm = () => {
     port: '',
     resolution: '',
     format: '',
-    mode: '连续',
+    mode: 'continuous',
     rack: 0,
     slot: 0
   }
@@ -680,9 +711,9 @@ const deviceStatusText = (status: string): string => {
 // Get device type display label
 const getDeviceTypeLabel = (type: string): string => {
   switch (type) {
-    case 'camera': return '相机'
-    case 'light': return '光源'
-    case 'plc': return '控制器'
+    case 'camera': return t('settings.devices.type.camera')
+    case 'light': return t('settings.devices.type.light')
+    case 'plc': return t('settings.devices.type.plc')
     default: return ''
   }
 }
@@ -741,14 +772,17 @@ const toggleDeviceStatus = async (device: Device) => {
 
     $q.notify({
       type: newStatus === 'online' ? 'positive' : 'warning',
-      message: `${device.name} 已${newStatus === 'online' ? '上线' : '离线'}`,
+      message: t('settings.notifications.deviceStatusChanged', {
+        name: device.name,
+        status: t(`settings.devices.status.${newStatus}`)
+      }),
       position: 'top'
     });
   } catch (error) {
     console.error(`切换设备状态出错:`, error);
     $q.notify({
       type: 'negative',
-      message: '更新设备状态失败',
+      message: t('settings.notifications.deviceStatusUpdateFailed'),
       position: 'top'
     });
   }
@@ -787,7 +821,7 @@ const previewCamera = (device: Device) => {
   } else {
     $q.notify({
       type: 'negative',
-      message: '无法获取摄像头ID，请检查配置',
+      message: t('settings.notifications.cameraIdError'),
       position: 'top'
     });
   }
@@ -858,18 +892,20 @@ const loadSystemSettings = async () => {
       const defaultSettings = {
         auto_save_interval: 5,
         data_retention: '30天',
-        alarm_threshold: 90
+        alarm_threshold: 90,
       };
+      
       
       // 合并后端数据和默认值
       Object.assign(systemSettings, defaultSettings, data);
+      
       console.log('System settings loaded:', systemSettings);
     }
   } catch (error) {
     console.error('Failed to load system settings:', error);
     $q.notify({
       type: 'negative',
-      message: '加载系统设置失败',
+      message: t('settings.notifications.loadSettingsFailed'),
       position: 'top'
     });
   }
@@ -893,11 +929,28 @@ const loadMesSettings = async () => {
     console.error('Failed to load MES settings:', error);
     $q.notify({
       type: 'negative',
-      message: '加载MES设置失败',
+      message: t('settings.notifications.loadMesFailed'),
       position: 'top'
     });
   }
 };
+
+// 语言选项
+const languageOptions = [
+  { label: '简体中文', value: 'zh-CN' },
+  { label: 'English', value: 'en' },
+  { label: 'Français', value: 'fr' },
+  { label: 'Español', value: 'es' },
+  { label: 'العربية', value: 'ar' },
+  { label: 'الدارجة المغربية', value: 'ary' }
+]
+
+// 获取语言标签
+const getLanguageLabel = (value: string) => {
+  const option = languageOptions.find(opt => opt.value === value)
+  return option ? option.label : value
+}
+
 </script>
 
 <style lang="scss" scoped>

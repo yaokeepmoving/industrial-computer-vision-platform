@@ -71,25 +71,52 @@ class SettingsService:
     # --- System Settings Methods ---
     
     def get_system_settings(self) -> Dict[str, Any]:
-        """获取所有系统设置"""
+        """获取所有系统设置，如果不存在则返回默认值"""
         settings = self.get_settings("system")
-        result = {}
         
+        # 默认设置
+        defaults = {
+            "auto_save_interval": 5,
+            "data_retention": "30天",
+            "alarm_threshold": 90,
+            "language": "zh-CN"
+        }
+        
+        result = defaults.copy()
+        
+        # 用数据库中的设置覆盖默认值
         for setting in settings:
-            # Convert numeric values
             if setting.key in ["auto_save_interval", "alarm_threshold"]:
-                result[setting.key] = int(setting.value)
+                try:
+                    result[setting.key] = int(setting.value)
+                except (ValueError, TypeError):
+                    pass
             else:
                 result[setting.key] = setting.value
                 
         return result
         
     def update_system_settings(self, settings_data: Dict[str, Any]) -> Dict[str, Any]:
-        """更新系统设置"""
-        for key, value in settings_data.items():
-            self.upsert_setting("system", key, str(value))
+        """更新系统设置，确保所有设置都被保存到数据库"""
+        try:
+            # 获取当前设置
+            current_settings = self.get_system_settings()
             
-        return self.get_system_settings()
+            # 更新设置
+            for key, value in settings_data.items():
+                if value is not None:  # 只更新非空值
+                    self.upsert_setting("system", key, str(value))
+            
+            # 确保所有默认设置都存在于数据库中
+            for key, value in current_settings.items():
+                if key not in settings_data:
+                    self.upsert_setting("system", key, str(value))
+                    
+            self.db.commit()
+            return self.get_system_settings()
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=500, detail=f"更新系统设置失败: {str(e)}")
     
     # --- MES Integration Settings Methods ---
     

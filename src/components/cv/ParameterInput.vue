@@ -4,8 +4,8 @@
       v-model="param.name" 
       dense 
       outlined 
-      label="参数名称"
-      :rules="[val => !!val || '请输入参数名称']"
+      :label="t('cv.parameter.name')"
+      :rules="[val => !!val || t('cv.parameter.nameRequired')]"
     />
   </div>
   <div class="col-12 col-sm-6">
@@ -14,8 +14,8 @@
       :options="paramTypeOptions" 
       dense 
       outlined 
-      label="参数类型"
-      :rules="[val => !!val || '请选择参数类型']"
+      :label="t('cv.parameter.type')"
+      :rules="[val => !!val || t('cv.parameter.typeRequired')]"
       emit-value
       map-options
       options-dense
@@ -37,7 +37,7 @@
       v-model="param.description" 
       dense 
       outlined 
-      label="描述"
+      :label="t('cv.parameter.description')"
     />
   </div>
   <div class="col-grow">
@@ -45,15 +45,19 @@
       v-model="param.default" 
       dense 
       outlined 
-      label="默认值"
+      :label="t('cv.parameter.defaultValue')"
     />
   </div>
   <div class="col-auto">
-    <q-checkbox v-model="param.required" label="必需参数" />
+    <q-checkbox v-model="param.required" :label="t('cv.parameter.required')" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 defineProps({
   param: {
     type: Object,

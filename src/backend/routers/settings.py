@@ -24,6 +24,7 @@ class SystemSettingsUpdate(BaseModel):
     auto_save_interval: Optional[int] = None
     data_retention: Optional[str] = None
     alarm_threshold: Optional[int] = None
+    language: Optional[str] = None
 
 class MesSettingsUpdate(BaseModel):
     server_url: Optional[str] = None

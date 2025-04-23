@@ -99,7 +99,7 @@ export class PipelineService {
    * 获取所有流水线列表
    */
   async getPipelines(): Promise<Pipeline[]> {
-    const response = await apiService.get<Pipeline[]>('/pipelines')
+    const response = await apiService.get<Pipeline[]>('/pipelines/')
     return response
   }
 
@@ -115,7 +115,7 @@ export class PipelineService {
    * 创建新的流水线
    */
   async createPipeline(data: CreatePipelineRequest): Promise<Pipeline> {
-    const response = await apiService.post<Pipeline>('/pipelines', data)
+    const response = await apiService.post<Pipeline>('/pipelines/', data)
     return response
   }
 

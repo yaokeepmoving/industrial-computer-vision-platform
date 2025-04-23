@@ -5,6 +5,7 @@ export interface SystemSettings {
   auto_save_interval: number;
   data_retention: string;
   alarm_threshold: number;
+  language: string;
 }
 
 // Interface for MES Settings

@@ -20,7 +20,11 @@ from .models.base import SessionLocal, engine
 from .services.model import ModelService
 from .models import ModelStatus
 import platform
+import pathlib
 
+if platform.system() == "Windows":
+    temp = pathlib.PosixPath
+    pathlib.PosixPath = pathlib.WindowsPath
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -43,14 +47,13 @@ app.add_middleware(
 uploads_dir = "uploads"
 if not os.path.exists(uploads_dir):
     os.makedirs(uploads_dir)
+    
+dist_dir = "dist"
+if not os.path.exists(dist_dir):
+    os.makedirs(dist_dir)
 
 # 配置静态文件路由
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-
-# 根路由
-@app.get("/")
-async def root():
-    return {"message": "工业铸字识别系统API服务正在运行"}
 
 # 注册路由
 app.include_router(annotation_router)
@@ -61,6 +64,8 @@ app.include_router(settings.router)
 app.include_router(camera.router)
 app.include_router(detection.router)
 app.include_router(dashboard_router)
+
+app.mount("/", StaticFiles(directory=dist_dir, html=True), name="frontend")
 
 
 # 自动检测和注册摄像头的后台任务

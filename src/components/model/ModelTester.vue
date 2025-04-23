@@ -6,25 +6,25 @@
         <!-- 选择模型区域 -->
         <div v-if="!selectedModel" class="select-model-card">
           <q-icon name="photo_camera" size="3em" color="primary" />
-          <div class="text-h6 q-mt-md">请先选择模型</div>
+          <div class="text-h6 q-mt-md">{{ t('modelTester.selectModel.title') }}</div>
           <div class="text-body2 q-mt-sm text-grey">
-            在模型列表中选择一个已训练完成的模型来测试
+            {{ t('modelTester.selectModel.hint') }}
           </div>
         </div>
 
         <!-- 控制面板 -->
         <div v-else class="control-panel">
           <div class="text-h6 q-mb-sm">{{ selectedModel.name }}</div>
-          <div class="text-caption q-mb-md">模型ID: {{ selectedModel.id }}</div>
+          <div class="text-caption q-mb-md">{{ t('modelTester.model.id') }}: {{ selectedModel.id }}</div>
 
           <q-separator class="q-my-md" />
 
           <!-- 参数设置 -->
-          <div class="text-subtitle1 q-mb-sm">参数设置</div>
+          <div class="text-subtitle1 q-mb-sm">{{ t('modelTester.params.title') }}</div>
           <q-input 
             v-model.number="confThreshold" 
             type="number" 
-            label="置信度阈值" 
+            :label="t('modelTester.params.confThreshold')" 
             outlined 
             dense 
             min="0" 
@@ -34,7 +34,7 @@
           <q-input 
             v-model.number="iouThreshold" 
             type="number" 
-            label="IOU阈值" 
+            :label="t('modelTester.params.iouThreshold')" 
             outlined 
             dense 
             min="0" 
@@ -46,10 +46,10 @@
           <q-separator class="q-my-md" />
 
           <!-- 图像上传 -->
-          <div class="text-subtitle1 q-mb-sm">测试图像</div>
+          <div class="text-subtitle1 q-mb-sm">{{ t('modelTester.image.title') }}</div>
           <q-file
             v-model="imageFile"
-            label="选择图像"
+            :label="t('modelTester.image.select')"
             outlined
             dense
             accept=".jpg,.jpeg,.png"
@@ -62,7 +62,7 @@
 
           <div class="q-mt-md">
             <q-btn 
-              label="测试模型" 
+              :label="t('modelTester.image.test')" 
               color="primary" 
               icon="science"
               @click="testModel"
@@ -78,27 +78,27 @@
       <div class="col-12 col-md-8">
         <q-card class="result-card">
           <q-card-section>
-            <div class="text-h6">测试结果</div>
+            <div class="text-h6">{{ t('modelTester.result.title') }}</div>
 
             <!-- 无图像时显示提示 -->
             <div v-if="!previewUrl && !resultImage" class="no-image-container">
               <q-icon name="insert_photo" size="4em" color="grey-5" />
               <div class="text-body1 q-mt-sm text-grey-7">
-                请上传图像进行测试
+                {{ t('modelTester.result.noImage') }}
               </div>
             </div>
 
             <!-- 预览上传的图像 -->
             <div v-else-if="previewUrl && !resultImage" class="image-preview">
-              <img :src="previewUrl" alt="预览图像" />
+              <img :src="previewUrl" :alt="t('modelTester.result.preview')" />
             </div>
 
             <!-- 显示检测结果 -->
             <div v-else-if="resultImage" class="result-preview">
-              <img :src="resultImage" alt="检测结果" />
+              <img :src="resultImage" :alt="t('modelTester.result.detectionResult')" />
               
               <div class="detection-list q-mt-md" v-if="detections && detections.length > 0">
-                <div class="text-subtitle1 q-mb-sm">检测到的对象：</div>
+                <div class="text-subtitle1 q-mb-sm">{{ t('modelTester.result.detectedObjects') }}</div>
                 <q-list bordered separator class="rounded-borders">
                   <q-item v-for="(detection, index) in detections" :key="index">
                     <q-item-section avatar>
@@ -109,7 +109,7 @@
                     <q-item-section>
                       <q-item-label>{{ detection.class_name }}</q-item-label>
                       <q-item-label caption>
-                        置信度: {{ (detection.confidence * 100).toFixed(1) }}%
+                        {{ t('modelTester.result.confidence') }}: {{ (detection.confidence * 100).toFixed(1) }}%
                       </q-item-label>
                     </q-item-section>
                     <q-item-section side>
@@ -123,7 +123,7 @@
               
               <div class="no-detection q-mt-md" v-else>
                 <q-icon name="info" color="info" />
-                <span class="q-ml-sm">未检测到任何对象</span>
+                <span class="q-ml-sm">{{ t('modelTester.result.noDetection') }}</span>
               </div>
             </div>
           </q-card-section>
@@ -136,16 +136,20 @@
 <script setup lang="ts">
 import { ref, defineProps, defineEmits, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { modelService, Model } from '../../services/model';
 
-const props = defineProps<{
-  selectedModel: Model | null;
-}>();
-
-const emit = defineEmits(['update:selectedModel']);
-
-// Quasar通知
+const { t } = useI18n();
 const $q = useQuasar();
+
+interface Props {
+  selectedModel: Model | null;
+}
+
+const props = defineProps<Props>();
+const emit = defineEmits<{
+  'update:selectedModel': [model: Model | null]
+}>();
 
 // 状态变量
 const imageFile = ref<File | null>(null);
@@ -187,13 +191,11 @@ const testModel = async () => {
   error.value = null;
 
   try {
-    // 确保我们有base64格式的图像数据
     const imageBase64 = previewUrl.value;
     if (!imageBase64) {
-      throw new Error('未能获取图像数据');
+      throw new Error(t('modelTester.notifications.noImageData'));
     }
 
-    // 调用模型测试API (使用base64)
     const result = await modelService.testModelWithBase64(props.selectedModel.id, imageBase64, {
       conf_thres: confThreshold.value,
       iou_thres: iouThreshold.value
@@ -206,29 +208,29 @@ const testModel = async () => {
       if (detections.value.length === 0) {
         $q.notify({
           type: 'info',
-          message: '未检测到任何对象',
+          message: t('modelTester.notifications.noObjectsDetected'),
           position: 'top'
         });
       } else {
         $q.notify({
           type: 'positive',
-          message: `检测到 ${detections.value.length} 个对象`,
+          message: t('modelTester.notifications.detectionCount', { count: detections.value.length }),
           position: 'top'
         });
       }
     } else {
-      error.value = result.error || '测试失败';
+      error.value = result.error || t('modelTester.notifications.testFailed', { error: '' });
       $q.notify({
         type: 'negative',
-        message: `测试失败: ${error.value}`,
+        message: t('modelTester.notifications.testFailed', { error: error.value }),
         position: 'top'
       });
     }
   } catch (err: any) {
-    error.value = err.message || '测试过程中发生错误';
+    error.value = err.message || t('modelTester.notifications.testError', { error: '' });
     $q.notify({
       type: 'negative',
-      message: `测试出错: ${error.value}`,
+      message: t('modelTester.notifications.testError', { error: error.value }),
       position: 'top'
     });
   } finally {

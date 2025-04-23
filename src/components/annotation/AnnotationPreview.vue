@@ -11,7 +11,7 @@
       </div>
       <div class="preview-overlay">
         <q-icon name="search" color="white" size="24px" />
-        <div class="preview-text">点击查看详情</div>
+        <div class="preview-text">{{ t('annotator.preview.clickToViewDetails') }}</div>
       </div>
     </div>
 
@@ -20,7 +20,7 @@
       <!-- Show placeholder when loading -->
       <div v-if="loading" class="loading-placeholder">
         <q-spinner color="primary" size="48px" />
-        <div class="q-mt-sm">加载中...</div>
+        <div class="q-mt-sm">{{ t('annotator.preview.loading') }}</div>
       </div>
     </div>
 
@@ -30,36 +30,66 @@
         <!-- Zoom controls -->
         <div class="zoom-controls">
           <q-btn round flat dense color="white" icon="remove" @click="zoomOut">
-            <q-tooltip>缩小</q-tooltip>
+            <q-tooltip>{{ t('annotator.controls.zoomOut') }}</q-tooltip>
           </q-btn>
           <div class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</div>
           <q-btn round flat dense color="white" icon="add" @click="zoomIn">
-            <q-tooltip>放大</q-tooltip>
+            <q-tooltip>{{ t('annotator.controls.zoomIn') }}</q-tooltip>
           </q-btn>
         </div>
 
         <!-- Close button (when interactive but not fullscreen) -->
         <q-btn v-if="isInteractive && !isFullscreen" round flat dense color="white" icon="close" 
           @click="disableInteractive" class="control-btn">
-          <q-tooltip>关闭详情</q-tooltip>
+          <q-tooltip>{{ t('annotator.controls.closeDetails') }}</q-tooltip>
         </q-btn>
 
         <!-- Fullscreen toggle -->
         <q-btn round flat dense color="white" :icon="isFullscreen ? 'fullscreen_exit' : 'fullscreen'" 
           @click="toggleFullscreen" class="control-btn">
-          <q-tooltip>{{ isFullscreen ? '退出全屏' : '全屏预览' }}</q-tooltip>
+          <q-tooltip>{{ isFullscreen ? t('annotator.controls.exitFullscreen') : t('annotator.controls.enterFullscreen') }}</q-tooltip>
         </q-btn>
       </div>
+    </div>
+
+    <!-- Annotation list -->
+    <div class="annotation-list" v-if="showAnnotations">
+      <q-scroll-area style="height: 100%;">
+        <q-list separator>
+          <q-item v-for="annotation in annotations" :key="annotation.id" 
+            clickable 
+            :active="selectedAnnotation && selectedAnnotation.id === annotation.id"
+            @click="selectAnnotationById(annotation.id)"
+            dense>
+            <q-item-section avatar>
+              <q-avatar size="24px" color="primary" text-color="white">
+                {{ getAnnotationLabel(annotation) }}
+              </q-avatar>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ t('annotator.preview.label') }}: {{ getAnnotationLabel(annotation) }}</q-item-label>
+              <q-item-label caption>
+                {{ t('annotator.preview.position') }}: {{ formatBounds(annotation) }}
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
+import { useQuasar } from 'quasar'
 import OpenSeadragon from 'openseadragon'
 import { createOSDAnnotator } from '@annotorious/openseadragon'
 import '@annotorious/openseadragon/annotorious-openseadragon.css'
 import { W3CAnnotation } from '@annotorious/openseadragon'
+import { useI18n } from 'vue-i18n'
+
+const $q = useQuasar()
+const { t } = useI18n()
 
 // Define props
 interface Props {
@@ -221,14 +251,23 @@ const getAnnotationType = (annotation: any): 'text_region' | 'wheel_text' => {
 }
 
 // Load annotations
-const loadAnnotations = () => {
+const loadAnnotations = async () => {
   if (!anno || !props.annotations) return
   
-  // Load annotations into Annotorious
-  if (props.annotations.length > 0) {
-    anno.setAnnotations(props.annotations)
-  } else {
-    anno.setAnnotations([])
+  try {
+    // Load annotations into Annotorious
+    if (props.annotations.length > 0) {
+      anno.setAnnotations(props.annotations)
+    } else {
+      anno.setAnnotations([])
+    }
+  } catch (error) {
+    console.error('Error loading annotations:', error)
+    $q.notify({
+      type: 'negative',
+      message: t('annotator.notifications.loadFailed'),
+      position: 'top'
+    })
   }
 }
 

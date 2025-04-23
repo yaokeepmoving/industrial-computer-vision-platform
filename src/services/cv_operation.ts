@@ -58,7 +58,7 @@ export class CVOperationService {
    * 获取所有CV操作列表
    */
   async getOperations(): Promise<CVOperation[]> {
-    const response = await apiService.get<CVOperation[]>('/cv/operations')
+    const response = await apiService.get<CVOperation[]>('/cv/operations/')
     return response
   }
 
@@ -74,7 +74,7 @@ export class CVOperationService {
    * 创建新的CV操作
    */
   async createOperation(data: CreateCVOperationRequest): Promise<CVOperation> {
-    const response = await apiService.post<CVOperation>('/cv/operations', data)
+    const response = await apiService.post<CVOperation>('/cv/operations/', data)
     return response
   }
 

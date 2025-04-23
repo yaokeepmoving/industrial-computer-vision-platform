@@ -112,7 +112,7 @@ export const useAlarmStore = defineStore('alarm', () => {
     isEmergencyStop.value = true
     addAlarm({
       level: 'critical',
-      message: '系统紧急停止',
+      message: 'System Emergency Stop',
       source: 'system'
     })
   }

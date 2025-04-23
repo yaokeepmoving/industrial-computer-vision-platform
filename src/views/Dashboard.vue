@@ -5,7 +5,7 @@
       <div class="col-12 col-md-6 col-lg-3">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">系统状态</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.systemStatus.title') }}</div>
             <div class="row items-center">
               <q-icon
                 :name="getStatusIcon(systemStatus.status)"
@@ -14,8 +14,8 @@
                 class="q-mr-sm"
               />
               <div>
-                <div class="text-h6">{{ systemStatus.message }}</div>
-                <div class="text-caption">运行时间: {{ formatUptime(systemStatus.uptime) }}</div>
+                <div class="text-h6">{{ systemStatus.message && t(systemStatus.message) }}</div>
+                <div class="text-caption">{{ t('dashboard.systemStatus.uptime') }}: {{ formatUptime(systemStatus.uptime) }}</div>
               </div>
             </div>
             <q-linear-progress
@@ -32,7 +32,7 @@
               class="q-mt-xs"
               size="xs"
             />
-            <div class="text-caption q-mt-xs">内存: {{ systemStatus.resources?.memory || 0 }}%</div>
+            <div class="text-caption q-mt-xs">{{ t('dashboard.systemStatus.memory') }}: {{ systemStatus.resources?.memory || 0 }}%</div>
             
             <q-linear-progress
               :value="systemStatus.resources?.disk ? systemStatus.resources.disk / 100 : 0"
@@ -40,7 +40,7 @@
               class="q-mt-xs"
               size="xs"
             />
-            <div class="text-caption q-mt-xs">磁盘: {{ systemStatus.resources?.disk || 0 }}%</div>
+            <div class="text-caption q-mt-xs">{{ t('dashboard.systemStatus.disk') }}: {{ systemStatus.resources?.disk || 0 }}%</div>
           </q-card-section>
         </q-card>
       </div>
@@ -49,35 +49,35 @@
       <div class="col-12 col-md-6 col-lg-3">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">设备状态</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.deviceStatus.title') }}</div>
             <div class="row items-center">
               <div class="text-h6">{{ deviceStatusSummary.online_rate }}%</div>
-              <div class="q-ml-sm text-caption">在线率</div>
+              <div class="q-ml-sm text-caption">{{ t('dashboard.deviceStatus.onlineRate') }}</div>
             </div>
             
             <div class="row q-mt-xs">
               <div class="col-3">
                 <div class="text-body1">{{ deviceStatusSummary.total }}</div>
-                <div class="text-caption">总设备</div>
+                <div class="text-caption">{{ t('dashboard.deviceStatus.total') }}</div>
               </div>
               <div class="col-3">
                 <div class="text-body1 text-positive">{{ deviceStatusSummary.online }}</div>
-                <div class="text-caption">在线</div>
+                <div class="text-caption">{{ t('dashboard.deviceStatus.online') }}</div>
               </div>
               <div class="col-3">
                 <div class="text-body1 text-negative">{{ deviceStatusSummary.offline }}</div>
-                <div class="text-caption">离线</div>
+                <div class="text-caption">{{ t('dashboard.deviceStatus.offline') }}</div>
               </div>
               <div class="col-3">
                 <div class="text-body1 text-warning">{{ deviceStatusSummary.error }}</div>
-                <div class="text-caption">故障</div>
+                <div class="text-caption">{{ t('dashboard.deviceStatus.error') }}</div>
               </div>
             </div>
             
             <div class="row q-mt-sm">
               <div class="col-3">
                 <div class="text-body1">{{ deviceStatusSummary.cameras }}</div>
-                <div class="text-caption">摄像头</div>
+                <div class="text-caption">{{ t('dashboard.deviceStatus.cameras') }}</div>
               </div>
             </div>
           </q-card-section>
@@ -88,9 +88,9 @@
       <div class="col-12 col-md-6 col-lg-3">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">今日检测统计</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.detectionStats.title') }}</div>
             <div class="row items-center">
-              <div class="text-h5">{{ detectionStats.total }}</div>
+                <div class="text-h5">{{ detectionStats.total }}</div>
               <q-chip
                 :color="detectionStats.change >= 0 ? 'positive' : 'negative'"
                 text-color="white"
@@ -99,9 +99,12 @@
               >
                 {{ detectionStats.change >= 0 ? '+' : '' }}{{ detectionStats.change }}%
               </q-chip>
-            </div>
+              </div>
             <div class="text-caption">
-              比昨日 ({{ detectionStats.yesterday_total || 0 }}) {{ detectionStats.change >= 0 ? '增加' : '减少' }}
+              {{ t('dashboard.detectionStats.comparedToYesterday', { 
+                count: detectionStats.yesterday_total || 0,
+                change: detectionStats.change >= 0 ? t('dashboard.detectionStats.increase') : t('dashboard.detectionStats.decrease')
+              }) }}
             </div>
           </q-card-section>
         </q-card>
@@ -111,9 +114,9 @@
       <div class="col-12 col-md-6 col-lg-3">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">今日缺陷统计</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.defectStats.title') }}</div>
             <div class="row items-center">
-              <div class="text-h5">{{ defectStats.total }}</div>
+                <div class="text-h5">{{ defectStats.total }}</div>
               <q-chip
                 :color="defectStats.change <= 0 ? 'positive' : 'negative'"
                 text-color="white"
@@ -122,9 +125,12 @@
               >
                 {{ defectStats.change >= 0 ? '+' : '' }}{{ defectStats.change }}%
               </q-chip>
-            </div>
+              </div>
             <div class="text-caption">
-              比昨日 ({{ defectStats.yesterday_total || 0 }}) {{ defectStats.change >= 0 ? '增加' : '减少' }}
+              {{ t('dashboard.defectStats.comparedToYesterday', { 
+                count: defectStats.yesterday_total || 0,
+                change: defectStats.change >= 0 ? t('dashboard.defectStats.increase') : t('dashboard.defectStats.decrease')
+              }) }}
             </div>
           </q-card-section>
         </q-card>
@@ -134,7 +140,7 @@
       <div class="col-12 col-sm-12 col-md-6">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">检测准确率</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.accuracy.title') }}</div>
             <div class="row items-center justify-between">
               <div class="col-6">
                 <div class="text-h5">{{ accuracy.value }}%</div>
@@ -147,7 +153,10 @@
                   {{ accuracy.change >= 0 ? '+' : '' }}{{ accuracy.change }}%
                 </q-chip>
                 <div class="text-caption q-mt-xs">
-                  比昨日 ({{ accuracy.yesterday_accuracy || 0 }}%) {{ accuracy.change >= 0 ? '提高' : '降低' }}
+                  {{ t('dashboard.accuracy.comparedToYesterday', { 
+                    value: accuracy.yesterday_accuracy || 0,
+                    change: accuracy.change >= 0 ? t('dashboard.accuracy.improve') : t('dashboard.accuracy.decrease')
+                  }) }}
                 </div>
               </div>
               <div class="col-6 text-center">
@@ -160,7 +169,7 @@
                   class="q-mb-xs"
                 >
                   <div class="text-subtitle1">{{ accuracy.value }}%</div>
-                  <div class="text-caption">准确率</div>
+                  <div class="text-caption">{{ t('dashboard.accuracy.rate') }}</div>
                 </q-circular-progress>
               </div>
             </div>
@@ -172,7 +181,7 @@
       <div class="col-12 col-sm-12 col-md-6">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm row items-center justify-between">
-            <div class="text-subtitle1">最近告警</div>
+            <div class="text-subtitle1">{{ t('dashboard.alerts.title') }}</div>
             <q-btn flat round icon="refresh" size="sm" dense @click="getRecentAlerts" />
           </q-card-section>
           <q-separator />
@@ -190,12 +199,12 @@
                   </q-item-label>
                 </q-item-section>
                 <q-item-section side v-if="!alert.is_read">
-                  <q-badge color="red" label="新" />
+                  <q-badge color="red" :label="t('dashboard.alerts.new')" />
                 </q-item-section>
               </q-item>
               <q-item v-if="alerts.length === 0">
                 <q-item-section>
-                  <q-item-label>暂无告警</q-item-label>
+                  <q-item-label>{{ t('dashboard.alerts.noAlerts') }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -207,7 +216,7 @@
       <div class="col-12">
         <q-card class="dashboard-card">
           <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1 q-mb-xs">过去7天检测趋势</div>
+            <div class="text-subtitle1 q-mb-xs">{{ t('dashboard.trend.title') }}</div>
           </q-card-section>
           <q-separator />
           <q-card-section class="chart-container">
@@ -225,6 +234,9 @@ import { useDashboard } from '../services/dashboard';
 import { format, fromUnixTime } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import Chart from 'chart.js/auto';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 // 获取仪表板服务
 const { 
@@ -268,9 +280,9 @@ const formatUptime = (hours) => {
   const remainingHours = Math.floor(hours % 24);
   
   if (days > 0) {
-    return `${days}天${remainingHours}小时`;
+    return `${days}${t('dashboard.systemStatus.days')}${remainingHours}${t('dashboard.systemStatus.hours')}`;
   } else {
-    return `${remainingHours}小时`;
+    return `${remainingHours}${t('dashboard.systemStatus.hours')}`;
   }
 };
 
@@ -370,7 +382,7 @@ const initTrendChart = () => {
       labels: dates,
       datasets: [
         {
-          label: '检测总数',
+          label: t('dashboard.trend.total'),
           data: totals,
           borderColor: '#1976D2',
           backgroundColor: 'rgba(25, 118, 210, 0.1)',
@@ -378,7 +390,7 @@ const initTrendChart = () => {
           fill: true
         },
         {
-          label: '通过',
+          label: t('dashboard.trend.pass'),
           data: passes,
           borderColor: '#21BA45',
           backgroundColor: 'rgba(33, 186, 69, 0.1)',
@@ -386,7 +398,7 @@ const initTrendChart = () => {
           fill: true
         },
         {
-          label: '失败',
+          label: t('dashboard.trend.fail'),
           data: fails,
           borderColor: '#C10015',
           backgroundColor: 'rgba(193, 0, 21, 0.1)',

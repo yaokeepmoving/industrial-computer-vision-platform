@@ -38,7 +38,7 @@
     <div class="alarm-panel__footer">
       <q-btn
         flat
-        label="确认所有"
+        :label="t('alarmPanel.actions.acknowledgeAll')"
         icon="done_all"
         @click="acknowledgeAllAlarms"
         :disable="allAcknowledged"
@@ -49,13 +49,13 @@
         @click="alarmStore.toggleSound"
       />
       <q-space />
-      <span class="alarm-count">共 {{ activeAlarms.length }} 条告警</span>
+      <span class="alarm-count">{{ t('alarmPanel.status.alarmCount', { count: activeAlarms.length }) }}</span>
       <q-chip
         v-if="alarmStore.isEmergencyStop"
         color="negative"
         text-color="white"
         icon="warning"
-        label="紧急停止"
+        :label="t('alarmPanel.status.emergencyStop')"
       />
     </div>
   </div>
@@ -65,7 +65,9 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useAlarmStore } from '../../stores/alarm'
 import { date, useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const $q = useQuasar()
 let alarmSound
 
@@ -117,15 +119,15 @@ const panelClass = computed(() => {
 const alarmTitle = computed(() => {
   switch (props.level) {
     case 'info':
-      return '系统通知'
+      return t('alarmPanel.title.info')
     case 'warning':
-      return '系统警告'
+      return t('alarmPanel.title.warning')
     case 'error':
-      return '系统错误'
+      return t('alarmPanel.title.error')
     case 'critical':
-      return '严重故障'
+      return t('alarmPanel.title.critical')
     default:
-      return '系统告警'
+      return t('alarmPanel.title.default')
   }
 })
 
@@ -158,7 +160,7 @@ function acknowledgeAlarm(id) {
     alarmSound.currentTime = 0
   }
   $q.notify({
-    message: '告警已确认',
+    message: t('alarmPanel.notifications.alarmAcknowledged'),
     color: 'positive',
     position: 'bottom-right',
     timeout: 2000
@@ -173,7 +175,7 @@ function acknowledgeAllAlarms() {
     alarmSound.currentTime = 0
   }
   $q.notify({
-    message: '所有告警已确认',
+    message: t('alarmPanel.notifications.allAlarmsAcknowledged'),
     color: 'positive',
     position: 'bottom-right',
     timeout: 2000

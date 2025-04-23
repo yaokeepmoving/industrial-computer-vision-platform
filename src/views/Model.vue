@@ -5,7 +5,7 @@
       <div class="col-12 col-lg-4">
         <q-card class="model-card">
           <q-card-section>
-            <div class="text-h6">模型列表</div>
+            <div class="text-h6">{{ t('model.list.title') }}</div>
             <q-list separator>
               <q-item v-for="model in models" :key="model.id" clickable v-ripple @click="selectModel(model)" 
                 :class="{ 'model-selected': selectedModel?.id === model.id }">
@@ -23,7 +23,7 @@
                       ID: {{ model.id }}
                     </q-badge>
                   </q-item-label>
-                  <q-item-label caption>架构: {{ getArchitectureLabel(model.architecture) }}</q-item-label>
+                  <q-item-label caption>{{ t('model.list.architecture') }}: {{ getArchitectureLabel(model.architecture) }}</q-item-label>
                   <q-chip 
                     size="sm" 
                     :color="getStatusColor(model.status)" 
@@ -43,7 +43,7 @@
                       icon="science" 
                       color="info"
                       @click.stop="testModelAction(model)"
-                      title="测试模型"
+                      :title="t('model.list.actions.test')"
                     />
                     <q-btn 
                       v-if="model.status === ModelStatus.NOT_STARTED || model.status === ModelStatus.FAILED" 
@@ -53,7 +53,7 @@
                       icon="play_arrow" 
                       color="positive"
                       @click.stop="trainModel(model)"
-                      title="开始训练"
+                      :title="t('model.list.actions.train')"
                     />
                     <q-btn 
                       flat 
@@ -62,19 +62,19 @@
                       icon="delete" 
                       color="negative"
                       @click.stop="confirmDeleteModel(model)"
-                      title="删除模型"
+                      :title="t('model.list.actions.delete')"
                     />
                   </div>
                 </q-item-section>
               </q-item>
             </q-list>
             <div v-if="models.length === 0" class="q-py-md text-center text-grey">
-              暂无模型，请创建新模型
+              {{ t('model.list.empty') }}
             </div>
             <q-btn
               color="primary"
               icon="add"
-              label="新建模型"
+              :label="t('model.list.create')"
               class="full-width q-mt-md"
               @click="createModelDialog = true"
             />
@@ -93,10 +93,10 @@
               text-color="white"
               class="full-width"
               :options="[
-                {label: '配置训练', value: 'config', icon: 'tune'},
-                {label: '模型测试', value: 'test', icon: 'science', disable: selectedModel?.status !== ModelStatus.COMPLETED},
-                {label: '训练日志', value: 'logs', icon: 'terminal', disable: selectedModel?.status !== ModelStatus.TRAINING},
-                {label: '训练文件', value: 'files', icon: 'folder', disable: selectedModel?.status !== ModelStatus.COMPLETED && selectedModel?.status !== ModelStatus.TRAINING}
+                {label: t('model.training.modes.config'), value: 'config', icon: 'tune'},
+                {label: t('model.training.modes.test'), value: 'test', icon: 'science', disable: selectedModel?.status !== ModelStatus.COMPLETED},
+                {label: t('model.training.modes.logs'), value: 'logs', icon: 'terminal', disable: selectedModel?.status !== ModelStatus.TRAINING},
+                {label: t('model.training.modes.files'), value: 'files', icon: 'folder', disable: selectedModel?.status !== ModelStatus.COMPLETED && selectedModel?.status !== ModelStatus.TRAINING}
               ]"
             />
           </q-card-section>
@@ -115,95 +115,95 @@
                 >
                   ID: {{ selectedModel.id }}
                 </q-badge> 
-                训练配置</div>
+                {{ t('model.training.title') }}</div>
             <div class="row q-col-gutter-md q-mt-md">
               <div class="col-12 col-md-6">
                 <q-select
                   outlined
-                    v-model="selectedDataset"
-                    :options="datasets"
-                    option-value="id"
-                    option-label="name"
-                  label="训练数据集"
+                  v-model="selectedDataset"
+                  :options="datasets"
+                  option-value="id"
+                  option-label="name"
+                  :label="t('model.training.params.dataset')"
                   class="full-width"
-                    disable
+                  disable
                 />
               </div>
               <div class="col-12 col-md-6">
                 <q-select
                   outlined
-                    v-model="selectedModel.architecture"
-                    :options="architectureOptions"
-                  label="模型架构"
+                  v-model="selectedModel.architecture"
+                  :options="architectureOptions"
+                  :label="t('model.training.params.architecture')"
                   class="full-width"
-                    disable
+                  disable
                 />
               </div>
               <div class="col-12 col-md-6">
                 <q-input
                   outlined
-                    v-model.number="epochs"
+                  v-model.number="epochs"
                   type="number"
-                  label="训练轮数"
+                  :label="t('model.training.params.epochs')"
                   class="full-width"
-                    :disable="selectedModel.status === ModelStatus.TRAINING"
+                  :disable="selectedModel.status === ModelStatus.TRAINING"
                 />
               </div>
               <div class="col-12 col-md-6">
                 <q-input
                   outlined
-                    v-model.number="batchSize"
+                  v-model.number="batchSize"
                   type="number"
-                  label="批次大小"
+                  :label="t('model.training.params.batchSize')"
                   class="full-width"
-                    :disable="selectedModel.status === ModelStatus.TRAINING"
-                  />
-                </div>
-                <div class="col-12 col-md-6">
-                  <q-input
-                    outlined
-                    v-model.number="imgSize"
-                    type="number"
-                    label="图像尺寸"
-                    class="full-width"
-                    :disable="selectedModel.status === ModelStatus.TRAINING"
-                  />
-                </div>
-                <div class="col-12 col-md-6">
-                  <q-input
-                    outlined
-                    v-model.number="confThres"
-                    type="number"
-                    label="置信度阈值"
-                    step="0.05"
-                    min="0"
-                    max="1"
-                    class="full-width"
-                    :disable="selectedModel.status === ModelStatus.TRAINING"
-                  />
-                </div>
-                <div class="col-12 col-md-6">
-                  <q-input
-                    outlined
-                    v-model.number="iouThres"
-                    type="number"
-                    label="IOU阈值"
-                    step="0.05"
-                    min="0"
-                    max="1"
-                    class="full-width"
-                    :disable="selectedModel.status === ModelStatus.TRAINING"
+                  :disable="selectedModel.status === ModelStatus.TRAINING"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input
+                  outlined
+                  v-model.number="imgSize"
+                  type="number"
+                  :label="t('model.training.params.imgSize')"
+                  class="full-width"
+                  :disable="selectedModel.status === ModelStatus.TRAINING"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input
+                  outlined
+                  v-model.number="confThres"
+                  type="number"
+                  :label="t('model.training.params.confThres')"
+                  step="0.05"
+                  min="0"
+                  max="1"
+                  class="full-width"
+                  :disable="selectedModel.status === ModelStatus.TRAINING"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input
+                  outlined
+                  v-model.number="iouThres"
+                  type="number"
+                  :label="t('model.training.params.iouThres')"
+                  step="0.05"
+                  min="0"
+                  max="1"
+                  class="full-width"
+                  :disable="selectedModel.status === ModelStatus.TRAINING"
                 />
               </div>
             </div>
             <q-btn
               color="primary"
               icon="play_arrow"
-                :label="selectedModel.status === ModelStatus.TRAINING ? '训练中...' : '开始训练'"
+              :label="selectedModel.status === ModelStatus.TRAINING ? t('model.training.actions.training') : t('model.training.actions.startTraining')"
               class="q-mt-lg"
-                @click="startTraining"
-                :loading="selectedModel.status === ModelStatus.TRAINING"
-                :disable="selectedModel.status === ModelStatus.TRAINING"
+              @click="startTraining"
+              :loading="selectedModel.status === ModelStatus.TRAINING"
+              :disable="selectedModel.status === ModelStatus.TRAINING"
             />
           </q-card-section>
         </q-card>
@@ -212,7 +212,7 @@
           <q-card class="progress-card q-mt-md" v-if="selectedModel">
           <q-card-section>
               <div class="row justify-between items-center">
-            <div class="text-h6">训练进度 
+            <div class="text-h6">{{ t('model.progress.title') }}
               <q-badge 
                 color="info" 
                 outline 
@@ -265,7 +265,7 @@
           <q-card class="training-card">
             <q-card-section>
               <div class="row justify-between items-center">
-                <div class="text-h6">训练日志 
+                <div class="text-h6">{{ t('model.logs.title') }}
                   <q-badge 
                     color="info" 
                     outline 
@@ -276,9 +276,9 @@
                   </q-badge>
                 </div>
                 <div class="row q-gutter-xs">
-                  <q-btn flat dense icon="refresh" color="primary" @click="fetchModelLogs" />
-                  <q-btn flat dense icon="content_copy" color="primary" @click="copyLogs" :disable="logs.length === 0" />
-                  <q-btn flat dense icon="vertical_align_bottom" color="primary" @click="scrollLogsToBottom" :disable="logs.length === 0" />
+                  <q-btn flat dense icon="refresh" color="primary" @click="fetchModelLogs" :title="t('model.logs.actions.refresh')" />
+                  <q-btn flat dense icon="content_copy" color="primary" @click="copyLogs" :disable="logs.length === 0" :title="t('model.logs.actions.copy')" />
+                  <q-btn flat dense icon="vertical_align_bottom" color="primary" @click="scrollLogsToBottom" :disable="logs.length === 0" :title="t('model.logs.actions.scrollToBottom')" />
                 </div>
               </div>
               
@@ -292,7 +292,7 @@
           <q-card class="files-card">
             <q-card-section>
               <div class="row justify-between items-center">
-                <div class="text-h6">训练文件浏览器 
+                <div class="text-h6">{{ t('model.files.title') }}
                   <q-badge 
                     color="info" 
                     outline 
@@ -303,13 +303,13 @@
                   </q-badge>
                 </div>
                 <div class="row q-gutter-xs">
-                  <q-btn flat dense icon="refresh" color="primary" @click="fetchModelFiles" title="刷新文件列表" />
-                  <q-btn flat dense icon="home" color="primary" @click="navigateToRoot" title="返回根目录" />
+                  <q-btn flat dense icon="refresh" color="primary" @click="fetchModelFiles" :title="t('model.files.actions.refresh')" />
+                  <q-btn flat dense icon="home" color="primary" @click="navigateToRoot" :title="t('model.files.actions.root')" />
                 </div>
               </div>
               
               <q-breadcrumbs class="q-mt-sm" separator="/" active-color="primary">
-                <q-breadcrumbs-el label="模型根目录" icon="home" @click="navigateToRoot" />
+                <q-breadcrumbs-el :label="t('model.files.actions.root')" icon="home" @click="navigateToRoot" />
                 <q-breadcrumbs-el 
                   v-for="(segment, index) in pathSegments" 
                   :key="index"
@@ -324,7 +324,7 @@
                     <q-icon name="arrow_upward" color="primary" />
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label>上一级目录</q-item-label>
+                    <q-item-label>{{ t('model.files.actions.upLevel') }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 
@@ -345,7 +345,7 @@
                 
                 <q-item v-if="modelFiles.length === 0">
                   <q-item-section>
-                    <q-item-label class="text-center text-grey">此目录为空</q-item-label>
+                    <q-item-label class="text-center text-grey">{{ t('model.files.empty') }}</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -372,13 +372,13 @@
                 </div>
                 <div v-else class="unknown-preview">
                   <q-icon name="insert_drive_file" size="6rem" color="grey" />
-                  <div class="text-subtitle1 q-mt-md">此文件类型不支持预览</div>
+                  <div class="text-subtitle1 q-mt-md">{{ t('model.files.preview.unsupported') }}</div>
             </div>
           </q-card-section>
               
               <q-card-actions align="right">
-                <q-btn flat label="下载" color="primary" @click="downloadSelectedFile()" icon="download" />
-                <q-btn flat label="关闭" color="primary" v-close-popup />
+                <q-btn flat :label="t('model.files.preview.actions.download')" color="primary" @click="downloadSelectedFile()" icon="download" />
+                <q-btn flat :label="t('model.files.preview.actions.close')" color="primary" v-close-popup />
               </q-card-actions>
         </q-card>
           </q-dialog>
@@ -410,9 +410,9 @@
         <q-card class="training-card flex-center">
           <q-card-section class="text-center">
             <q-icon name="model_training" size="5rem" color="grey-7" />
-            <div class="text-h6 q-mt-md">请选择一个模型</div>
+            <div class="text-h6 q-mt-md">{{ t('model.status.empty') }}</div>
             <div class="text-subtitle1 q-mt-sm text-grey-7">
-              从左侧模型列表中选择一个模型，或者创建新的模型
+              {{ t('model.status.emptyHint') }}
             </div>
           </q-card-section>
         </q-card>
@@ -423,16 +423,16 @@
     <q-dialog v-model="createModelDialog" persistent>
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">新建模型</div>
+          <div class="text-h6">{{ t('model.dialogs.create.title') }}</div>
         </q-card-section>
         
         <q-card-section class="q-pt-none">
           <q-input 
             outlined 
             v-model="newModel.name" 
-            label="模型名称" 
+            :label="t('model.dialogs.create.name')" 
             autofocus
-            :rules="[val => !!val || '请输入模型名称']"
+            :rules="[val => !!val || t('model.dialogs.create.nameRequired')]"
           />
           
           <q-select
@@ -441,9 +441,9 @@
             :options="datasets"
             option-value="id"
             option-label="name"
-            label="数据集"
+            :label="t('model.dialogs.create.dataset')"
             class="q-mt-md"
-            :rules="[val => !!val || '请选择数据集']"
+            :rules="[val => !!val || t('model.dialogs.create.datasetRequired')]"
             emit-value
             map-options
           />
@@ -451,8 +451,9 @@
           <q-select
             outlined
             v-model="newModel.architecture"
-            :options="architectureOptions"
-            label="模型架构"
+            :options="architectureOptions.map(opt => opt.value)"
+            :option-label="getArchitectureLabel"
+            :label="t('model.training.params.architecture')"
             class="q-mt-md"
           />
           
@@ -460,7 +461,7 @@
             outlined 
             v-model.number="newModel.parameters!.epochs" 
             type="number"
-            label="训练轮数" 
+            :label="t('model.training.params.epochs')"
             class="q-mt-md"
           />
           
@@ -468,7 +469,7 @@
             outlined 
             v-model.number="newModel.parameters!.batch_size" 
             type="number"
-            label="批次大小" 
+            :label="t('model.training.params.batchSize')"
             class="q-mt-md"
           />
           
@@ -476,7 +477,7 @@
             outlined 
             v-model.number="newModel.parameters!.img_size" 
             type="number"
-            label="图像尺寸" 
+            :label="t('model.training.params.imgSize')"
             class="q-mt-md"
           />
           
@@ -484,7 +485,7 @@
             outlined 
             v-model.number="newModel.parameters!.conf_thres" 
             type="number"
-            label="置信度阈值" 
+            :label="t('model.training.params.confThres')"
             step="0.05"
             min="0"
             max="1"
@@ -495,7 +496,7 @@
             outlined 
             v-model.number="newModel.parameters!.iou_thres" 
             type="number"
-            label="IOU阈值" 
+            :label="t('model.training.params.iouThres')"
             step="0.05"
             min="0"
             max="1"
@@ -504,8 +505,8 @@
         </q-card-section>
         
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="创建" color="primary" @click="createModel" />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.confirm')" color="primary" @click="createModel" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -515,12 +516,12 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="delete" color="negative" text-color="white" />
-          <span class="q-ml-sm">确定要删除模型 "{{ modelToDelete?.name }}" 吗？</span>
+          <span class="q-ml-sm">{{ t('model.dialogs.delete.message', { name: modelToDelete?.name }) }}</span>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="deleteModel" :loading="deleting" />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.delete')" color="negative" @click="deleteModel" :loading="deleting" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -530,6 +531,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { modelService, Model, ModelStatus, ModelArchitecture, CreateModelRequest, ModelFile } from '../services/model'
 import { useRouter, useRoute } from 'vue-router'
 import { AnnotationService } from '../services/annotation'
@@ -538,7 +540,7 @@ import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 
-// Quasar提示组件
+const { t } = useI18n()
 const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
@@ -694,27 +696,21 @@ const startTraining = async () => {
   if (!selectedModel.value) return
   
   try {
-    // 首先更新模型参数
     await updateModelParameters()
-    
-    // 然后开始训练
     await modelService.startTraining(selectedModel.value.id)
-    
-    // 刷新模型数据
     await refreshModel(selectedModel.value.id)
     
     $q.notify({
       type: 'positive',
-      message: '模型训练已开始',
+      message: t('model.notifications.trainStarted'),
       position: 'top',
     })
     
-    // 开始轮询训练状态
     startPolling()
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: `开始训练失败: ${(error as Error).message}`,
+      message: t('model.notifications.trainFailed', { error: (error as Error).message }),
       position: 'top',
     })
   }
@@ -735,7 +731,7 @@ const updateModelParameters = async () => {
       }
     })
   } catch (error) {
-    throw new Error(`更新模型参数失败: ${(error as Error).message}`)
+    throw new Error(t('model.notifications.updateParamsFailed', { error: (error as Error).message }))
   }
 }
 
@@ -760,11 +756,10 @@ const selectModel = (model: Model) => {
 // 创建新模型
 const createModel = async () => {
   try {
-    // Validate form fields first
     if (!newModel.value.name) {
       $q.notify({
         type: 'warning',
-        message: '请输入模型名称',
+        message: t('model.dialogs.create.nameRequired'),
         position: 'top'
       })
       return
@@ -773,7 +768,7 @@ const createModel = async () => {
     if (!newModel.value.dataset_id) {
       $q.notify({
         type: 'warning',
-        message: '请选择数据集',
+        message: t('model.dialogs.create.datasetRequired'),
         position: 'top'
       })
       return
@@ -782,7 +777,6 @@ const createModel = async () => {
     const model = await modelService.createModel(newModel.value)
     models.value.push(model)
     
-    // Reset the form and close dialog
     newModel.value = {
       name: '',
       architecture: ModelArchitecture.YOLO_V8,
@@ -798,20 +792,18 @@ const createModel = async () => {
     
     createModelDialog.value = false
     
-    // Show success notification
     $q.notify({
       type: 'positive',
-      message: '模型创建成功',
+      message: t('model.notifications.createSuccess'),
       position: 'top'
     })
     
-    // Select the new model
     selectModel(model)
   } catch (error) {
     console.error('Failed to create model:', error)
     $q.notify({
       type: 'negative',
-      message: `创建模型失败: ${(error as Error).message}`,
+      message: t('model.notifications.createFailed', { error: (error as Error).message }),
       position: 'top'
     })
   }
@@ -844,13 +836,13 @@ const deleteModel = async () => {
     
     $q.notify({
       type: 'positive',
-      message: '模型删除成功',
+      message: t('model.notifications.deleteSuccess'),
       position: 'top',
     })
   } catch (error) {
     $q.notify({
       type: 'negative',
-      message: `删除模型失败: ${(error as Error).message}`,
+      message: t('model.notifications.deleteFailed', { error: (error as Error).message }),
       position: 'top',
     })
   } finally {
@@ -948,7 +940,7 @@ const loadDatasets = async () => {
     console.error('Failed to load datasets:', error)
     $q.notify({
       type: 'negative',
-      message: '加载数据集失败',
+      message: t('model.notifications.loadDatasetsFailed'),
       position: 'top',
     })
   }
@@ -1175,7 +1167,7 @@ const copyLogs = () => {
     .then(() => {
       $q.notify({
         type: 'positive',
-        message: '日志已复制到剪贴板',
+        message: t('model.notifications.copyLogs'),
         position: 'top',
         timeout: 1000
       })
@@ -1184,7 +1176,7 @@ const copyLogs = () => {
       console.error('Failed to copy logs:', err)
       $q.notify({
         type: 'negative',
-        message: '复制日志失败',
+        message: t('model.notifications.copyLogsFailed'),
         position: 'top'
       })
     })
@@ -1393,7 +1385,7 @@ const downloadSelectedFile = (file?: ModelFile) => {
   
   $q.notify({
     type: 'positive',
-    message: `正在下载 ${fileToDownload.name}`,
+    message: t('model.notifications.downloadStarted', { name: fileToDownload.name }),
     position: 'top'
   })
 }
@@ -1477,7 +1469,7 @@ const copyModelId = (id: number, event: Event) => {
       .then(() => {
         $q.notify({
           type: 'positive',
-          message: '模型ID已复制到剪贴板',
+          message: t('model.notifications.copyModelId'),
           position: 'top',
           timeout: 1000
         })
@@ -1486,7 +1478,7 @@ const copyModelId = (id: number, event: Event) => {
         console.error('Failed to copy model ID:', err)
         $q.notify({
           type: 'negative',
-          message: '复制模型ID失败',
+          message: t('model.notifications.copyModelIdFailed'),
           position: 'top'
         })
       })

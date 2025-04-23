@@ -152,7 +152,7 @@ class DetectionService:
         
         # 应用排序和分页
         query = query.order_by(desc(Detection.timestamp))
-        query = query.offset((page - 1) * per_page).limit(per_page)
+        # query = query.offset((page - 1) * per_page).limit(per_page)
         
         # 获取结果
         detections = query.all()

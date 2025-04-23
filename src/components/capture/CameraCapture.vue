@@ -5,7 +5,7 @@
         ref="streamImageElement" 
         class="video-stream" 
         :src="streamUrl" 
-        alt="视频流" 
+        :alt="t('camera.capture.videoStream')" 
         @error="handleStreamError"
         @load="handleStreamLoaded"
         v-show="isStreaming || (!isStreaming && !uploadedImage)"
@@ -13,26 +13,26 @@
       
       <div v-if="isLoading" class="loading-overlay">
         <q-spinner size="3em" color="primary" />
-        <div class="q-mt-sm">加载摄像头...</div>
+        <div class="q-mt-sm">{{ t('camera.capture.loading') }}</div>
       </div>
       
       <div v-if="streamError" class="error-overlay">
         <q-icon name="error" size="3em" color="negative" />
-        <div class="q-mt-sm">{{ streamError }}</div>
+        <div class="q-mt-sm">{{ t('camera.capture.error') }}</div>
       </div>
       
       <!-- 显示上传的图片 -->
       <div v-if="uploadedImage" class="uploaded-image-preview">
         <img :src="uploadedImage" alt="上传的图片" class="uploaded-image" />
         <div class="uploaded-image-info">
-          <q-badge color="secondary">已上传图片</q-badge>
+          <q-badge color="secondary">{{ t('camera.capture.uploadedImage') }}</q-badge>
         </div>
       </div>
       
       <!-- 无相机提示 -->
       <div v-if="!props.streamUrl && !uploadedImage" class="no-camera-overlay">
         <q-icon name="cloud_upload" size="3em" color="primary" />
-        <div class="q-mt-sm">无可用相机，请上传图片</div>
+        <div class="q-mt-sm">{{ t('camera.capture.noCamera') }}</div>
       </div>
     </div>
     
@@ -42,7 +42,7 @@
         <template v-if="props.streamUrl">
           <q-btn
             icon="videocam"
-            :label="isStreaming ? '停止监控' : '开始监控'"
+            :label="isStreaming ? t('camera.capture.stopMonitoring') : t('camera.capture.startMonitoring')"
             :color="isStreaming ? 'negative' : 'primary'"
             @click="toggleStream"
           />
@@ -50,7 +50,7 @@
           <!-- 预览状态显示拍照按钮 -->
           <q-btn v-if="isStreaming"
             icon="photo_camera"
-            label="拍照"
+            :label="t('camera.capture.capture')"
             color="secondary"
             @click="captureImage"
           />
@@ -58,7 +58,7 @@
           <!-- 停止预览状态显示上传文件按钮 -->
           <q-btn v-else
             icon="cloud_upload"
-            label="上传图片"
+            :label="t('camera.capture.uploadImage')"
             color="secondary"
             @click="triggerFileUpload"
           />
@@ -68,7 +68,7 @@
         <template v-else>
           <q-btn
             icon="cloud_upload"
-            label="上传图片"
+            :label="t('camera.capture.uploadImage')"
             color="primary"
             class="full-width"
             @click="triggerFileUpload"
@@ -78,13 +78,13 @@
       
       <div class="text-caption q-mt-sm text-grey-8">
         <span v-if="props.streamUrl">
-          流状态: {{ isStreaming ? '正在监控' : '已停止' }}
+          {{ t('camera.capture.streamStatus') }} {{ isStreaming ? t('camera.capture.streaming') : t('camera.capture.stopped') }}
         </span>
         <span v-else-if="uploadedImage">
-          已上传图片，等待处理
+          {{ t('camera.capture.uploadedImage') }}
         </span>
         <span v-else>
-          无相机，请上传图片
+          {{ t('camera.capture.noCamera') }}
         </span>
       </div>
       
@@ -92,14 +92,14 @@
       <div v-if="uploadedImage" class="upload-actions q-mt-sm">
         <q-btn
           icon="auto_fix_high"
-          label="使用此图片处理"
+          :label="t('camera.capture.useUploadedImage')"
           color="primary"
           class="full-width"
           @click="useUploadedImage"
         />
         <q-btn
           icon="refresh"
-          label="重新上传"
+          :label="t('camera.capture.reupload')"
           color="secondary"
           class="full-width q-mt-xs"
           flat
@@ -112,6 +112,7 @@
         type="file" 
         ref="fileInput" 
         accept="image/*" 
+        multiple
         style="display:none" 
         @change="handleFileUpload" 
       />
@@ -122,8 +123,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 // Props定义
 const props = defineProps({
@@ -438,17 +441,32 @@ const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (!target.files || target.files.length === 0) return
   
-  const file = target.files[0]
-  if (!file.type.includes('image/')) {
+  // 检查所有文件是否都是图片
+  const files = Array.from(target.files)
+  const invalidFiles = files.filter(file => !file.type.includes('image/'))
+  
+  if (invalidFiles.length > 0) {
     $q.notify({
       type: 'negative',
-      message: '请上传图片文件',
+      message: '请只上传图片文件',
       position: 'top'
     })
     return
   }
   
+  // 对于批量上传，我们先通知用户
+  if (files.length > 1) {
+    $q.notify({
+      type: 'info',
+      message: `正在准备处理 ${files.length} 张图片`,
+      position: 'top'
+    })
+  }
+  
   try {
+    // 对于单个文件，保持原有行为
+    if (files.length === 1) {
+      const file = files[0]
     const reader = new FileReader()
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
@@ -487,6 +505,68 @@ const handleFileUpload = (event: Event) => {
     }
     
     reader.readAsDataURL(file)
+    } 
+    // 对于多个文件，发送批量上传事件
+    else {
+      // 停止当前流，如果有的话
+      if (isStreaming.value) {
+        stopStream()
+      }
+      
+      // 对每个文件读取为base64，并收集结果
+      const processFilesSequentially = async () => {
+        const fileDataArray: {imageData: string, fileName: string}[] = []
+        
+        for (const file of files) {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              if (e.target && typeof e.target.result === 'string') {
+                resolve(e.target.result)
+              } else {
+                reject(new Error('无法读取图片数据'))
+              }
+            }
+            reader.onerror = () => reject(reader.error)
+            reader.readAsDataURL(file)
+          })
+          
+          fileDataArray.push({
+            imageData: base64Data,
+            fileName: file.name
+          })
+        }
+        
+        // 显示第一张图片作为预览
+        if (fileDataArray.length > 0) {
+          uploadedImage.value = fileDataArray[0].imageData
+        }
+        
+        // 发送批量上传事件
+        emit('capture', {
+          batchImages: fileDataArray,
+          timestamp: new Date().toISOString(),
+          source: 'batch-upload',
+          count: fileDataArray.length
+        })
+        
+        // 更新状态
+        emit('status-change', 'uploaded')
+        
+        // 重置文件输入
+        if (fileInput.value) {
+          fileInput.value.value = ''
+        }
+      }
+      
+      processFilesSequentially().catch(error => {
+        console.error('批量处理图片失败:', error)
+        emit('error', { 
+          message: '批量处理图片失败',
+          error: error instanceof Error ? error.message : String(error)
+        })
+      })
+    }
   } catch (error) {
     console.error('处理上传文件失败:', error)
     emit('error', { 

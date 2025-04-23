@@ -80,7 +80,7 @@ export class ModelService {
    * 获取所有模型列表
    */
   async getModels(): Promise<Model[]> {
-    const response = await apiService.get<Model[]>('/models');
+    const response = await apiService.get<Model[]>('/models/');
     return response;
   }
 
@@ -111,7 +111,7 @@ export class ModelService {
       parameters: data.parameters
     };
     
-    const response = await apiService.post<Model>('/models', requestData);
+    const response = await apiService.post<Model>('/models/', requestData);
     return response;
   }
 

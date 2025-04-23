@@ -4,6 +4,8 @@ import { Quasar, Notify, Dialog, Loading } from 'quasar'
 import router from './router'
 import App from './App.vue'
 import VueKonva from 'vue-konva'
+import i18n from './i18n'
+
 // Import Quasar css
 import '@quasar/extras/material-icons/material-icons.css'
 import '@quasar/extras/mdi-v6/mdi-v6.css'
@@ -47,5 +49,7 @@ app.use(Quasar, {
   }
 })
 app.use(VueKonva)
+app.use(i18n)
+
 // Mount app
 app.mount('#app')

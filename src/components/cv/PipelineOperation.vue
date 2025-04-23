@@ -6,14 +6,14 @@
         <!-- 左侧按钮组 -->
         <div class="col-auto">
           <div class="row items-center q-gutter-sm">
-            <q-btn color="primary" icon="add" label="新建流水线" dense @click="createNewPipeline" />
+            <q-btn color="primary" icon="add" :label="t('cv.pipeline.new')" dense @click="createNewPipeline" />
             <q-btn-group flat>
-              <q-btn flat dense icon="upload_file" label="导入" @click="importPipelines">
-                <q-tooltip>导入流水线配置</q-tooltip>
+              <q-btn flat dense icon="upload_file" :label="t('cv.pipeline.import')" @click="importPipelines">
+                <q-tooltip>{{ t('cv.pipeline.importTooltip') }}</q-tooltip>
                 <input type="file" accept=".xlsx" class="hidden-input" ref="fileInput" @change="handleFileImport" />
               </q-btn>
-              <q-btn flat dense icon="download" label="导出" @click="exportPipelines">
-                <q-tooltip>导出流水线配置</q-tooltip>
+              <q-btn flat dense icon="download" :label="t('cv.pipeline.export')" @click="exportPipelines">
+                <q-tooltip>{{ t('cv.pipeline.exportTooltip') }}</q-tooltip>
               </q-btn>
             </q-btn-group>
             <q-btn v-if="selected.length > 0" 
@@ -21,13 +21,13 @@
               dense 
               color="negative" 
               icon="delete_sweep" 
-              :label="'删除 (' + selected.length + ')'"
+              :label="t('cv.pipeline.deleteSelected', { count: selected.length })"
               @click="confirmBatchDelete"
             >
-              <q-tooltip>批量删除选中的流水线</q-tooltip>
+              <q-tooltip>{{ t('cv.pipeline.deleteTooltip') }}</q-tooltip>
             </q-btn>
             <q-chip dense color="grey-7" text-color="white" icon="account_tree" size="sm">
-              {{ pipelines.length }} 个流水线
+              {{ t('cv.pipeline.pipelineCount', { count: pipelines.length }) }}
             </q-chip>
           </div>
         </div>
@@ -35,7 +35,7 @@
         <!-- 右侧搜索框和刷新按钮 -->
         <div class="col">
           <div class="row items-center justify-end">
-            <q-input v-model="searchText" placeholder="搜索流水线名称或描述" dense outlined class="search-input"
+            <q-input v-model="searchText" :placeholder="t('cv.pipeline.search')" dense outlined class="search-input"
               style="width: 250px">
               <template v-slot:prepend>
                 <q-icon name="search" />
@@ -45,7 +45,7 @@
               </template>
             </q-input>
             <q-btn flat dense icon="refresh" class="q-ml-sm" @click="loadPipelines" :loading="loading">
-              <q-tooltip>刷新列表</q-tooltip>
+              <q-tooltip>{{ t('cv.pipeline.refresh') }}</q-tooltip>
             </q-btn>
           </div>
         </div>
@@ -76,7 +76,7 @@
         <template v-slot:body-cell-nodes="props">
           <q-td :props="props">
             <q-chip dense size="sm" class="node-chip">
-              {{ props.value }} 个节点
+              {{ t('cv.pipeline.nodeCount', { count: props.value }) }}
             </q-chip>
           </q-td>
         </template>
@@ -93,13 +93,13 @@
           <q-td :props="props" class="action-cell">
             <q-btn-group flat>
               <q-btn flat dense icon="edit" @click="editPipeline(props.row)">
-                <q-tooltip>编辑</q-tooltip>
+                <q-tooltip>{{ t('cv.pipeline.actions.edit') }}</q-tooltip>
               </q-btn>
               <q-btn flat dense icon="play_arrow" color="positive" @click.stop="openTestPanel(props.row)">
-                <q-tooltip>测试</q-tooltip>
+                <q-tooltip>{{ t('cv.pipeline.actions.test') }}</q-tooltip>
               </q-btn>
               <q-btn flat dense icon="delete" color="negative" @click.stop="confirmDelete(props.row)">
-                <q-tooltip>删除</q-tooltip>
+                <q-tooltip>{{ t('cv.pipeline.actions.delete') }}</q-tooltip>
               </q-btn>
             </q-btn-group>
           </q-td>
@@ -132,8 +132,8 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="deletePipeline" />
+          <q-btn flat :label="t('cv.pipeline.deleteConfirm.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('cv.pipeline.deleteConfirm.confirm')" color="negative" @click="deletePipeline" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -143,13 +143,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { pipelineService } from '@/services/pipeline'
 import { Pipeline, CreatePipelineRequest, NodeType } from '@/services/pipeline'
 import * as XLSX from 'xlsx'
 import PipelineEditor from './PipelineEditor.vue'
 import PipelineTestPanel from './PipelineTestPanel.vue'
 
-const $q = useQuasar();
+const { t } = useI18n()
+const $q = useQuasar()
+
 // 状态变量
 const pipelines = ref<Pipeline[]>([])
 const loading = ref(false)
@@ -195,34 +198,34 @@ const columns = [
   {
     name: 'name',
     required: true,
-    label: '流水线名称',
+    label: t('cv.pipeline.columns.name'),
     align: 'left' as const,
     field: 'name',
     sortable: true
   },
   {
     name: 'description',
-    label: '描述',
+    label: t('cv.pipeline.columns.description'),
     align: 'left' as const,
     field: 'description'
   },
   {
     name: 'nodes',
-    label: '节点数',
-    align: 'center' as const,
-    field: (row: { metadata: { nodes: string | any[] } }) => row.metadata.nodes.length,
+    label: t('cv.pipeline.columns.nodes'),
+    align: 'left' as const,
+    field: (row: Pipeline) => row.metadata?.nodes?.length || 0,
     sortable: true
   },
   {
     name: 'created_at',
-    label: '创建时间',
+    label: t('cv.pipeline.columns.createdAt'),
     align: 'left' as const,
     field: 'createdAt',
     sortable: true
   },
   {
     name: 'actions',
-    label: '操作',
+    label: t('cv.pipeline.columns.actions'),
     align: 'center' as const,
     field: 'actions'
   }
@@ -240,9 +243,9 @@ const filteredPipelines = computed(() => {
 
 const deleteDialogMessage = computed(() => {
   if (pipelineToDelete.value) {
-    return `确定要删除流水线 "${pipelineToDelete.value.name}" 吗？`
+    return t('cv.pipeline.deleteConfirm.singleMessage', { name: pipelineToDelete.value.name })
   }
-  return `确定要删除选中的 ${selected.value.length} 个流水线吗？`
+  return t('cv.pipeline.deleteConfirm.batchMessage', { count: selected.value.length })
 })
 
 // 方法
@@ -251,10 +254,10 @@ const loadPipelines = async () => {
   try {
     pipelines.value = await pipelineService.getPipelines()
   } catch (error) {
-    console.error('加载流水线失败:', error)
+    console.error(t('cv.pipeline.notifications.loadError'), error)
     $q.notify({
       type: 'negative',
-      message: '加载流水线失败'
+      message: t('cv.pipeline.notifications.loadError')
     })
   } finally {
     loading.value = false
@@ -301,7 +304,7 @@ const openTestPanel = (pipeline: Pipeline) => {
   if (!pipeline) {
     $q.notify({
       type: 'warning',
-      message: '无法打开测试面板：流水线不存在'
+      message: t('cv.pipeline.notifications.testPanelError')
     })
     return
   }
@@ -341,15 +344,15 @@ const deletePipeline = async () => {
     
     $q.notify({
       type: 'positive',
-      message: pipelineToDelete.value ? '删除成功' : '批量删除成功',
+      message: pipelineToDelete.value ? t('cv.pipeline.notifications.deleteSuccess') : t('cv.pipeline.notifications.batchDeleteSuccess'),
       position: 'top',
       timeout: 3000
     })
   } catch (error) {
-    console.error('删除失败:', error)
+    console.error(t('cv.pipeline.notifications.deleteError'), error)
     $q.notify({
       type: 'negative',
-      message: '删除失败',
+      message: t('cv.pipeline.notifications.deleteError'),
       position: 'top',
       timeout: 3000
     })
@@ -364,18 +367,18 @@ const handleSubmit = async (pipelineData: Partial<Pipeline>) => {
   try {
     // 验证流水线名称
     if (!pipelineData.name?.trim()) {
-      throw new Error('流水线名称不能为空')
+      throw new Error(t('cv.pipeline.validation.nameRequired'))
     }
 
     // 验证流水线元数据
     if (!pipelineData.metadata) {
-      throw new Error('流水线元数据不能为空')
+      throw new Error(t('cv.pipeline.validation.metadataRequired'))
     }
 
     try {
       pipelineService.validatePipelineMetadata(pipelineData.metadata)
     } catch (error) {
-      throw new Error(`流水线配置无效: ${error instanceof Error ? error.message : '未知错误'}`)
+      throw new Error(`${t('cv.pipeline.validation.invalidMetadata')}: ${error instanceof Error ? error.message : t('common.unknownError')}`)
     }
 
     // 确保inputParams和outputParams存在
@@ -413,15 +416,15 @@ const handleSubmit = async (pipelineData: Partial<Pipeline>) => {
     await loadPipelines()
     $q.notify({
       type: 'positive',
-      message: '保存成功',
+      message: t('cv.pipeline.notifications.saveSuccess'),
       position: 'top',
       timeout: 3000
     })
   } catch (error) {
-    console.error('保存失败:', error)
+    console.error(t('cv.pipeline.notifications.saveError'), error)
     $q.notify({
       type: 'negative',
-      message: error instanceof Error ? error.message : '保存失败',
+      message: error instanceof Error ? error.message : t('cv.pipeline.notifications.saveError'),
       position: 'top',
       timeout: 5000
     })
@@ -452,12 +455,12 @@ const handleFileImport = async (event: Event) => {
     
     // 检查文件大小
     if (file.size > 10 * 1024 * 1024) { // 10MB
-      throw new Error('文件大小不能超过10MB')
+      throw new Error(t('cv.pipeline.validation.fileSizeLimit'))
     }
 
     // 检查文件类型
     if (!file.name.endsWith('.xlsx')) {
-      throw new Error('只支持.xlsx格式的文件')
+      throw new Error(t('cv.pipeline.validation.fileTypeError'))
     }
 
     const wb = await readExcelFile(file)
@@ -465,11 +468,11 @@ const handleFileImport = async (event: Event) => {
     const data = XLSX.utils.sheet_to_json(ws)
 
     // 验证数据格式
-    const requiredFields = ['流水线名称', '元数据']
+    const requiredFields = [t('cv.pipeline.importExport.columns.name'), t('cv.pipeline.importExport.columns.metadata')]
     for (const row of data as { [k: string]: any }[]) {
       for (const field of requiredFields) {
         if (!row[field]) {
-          throw new Error(`缺少必需字段: ${field}`)
+          throw new Error(t('cv.pipeline.validation.missingField', { field }))
         }
       }
     }
@@ -484,11 +487,11 @@ const handleFileImport = async (event: Event) => {
     for (const row of data as { [k: string]: any }[]) {
       try {
         const pipeline = {
-          name: row['流水线名称'],
-          description: row['描述'] || '',
-          metadata: parseJsonField(row['元数据']),
-          inputParams: parseJsonField(row['输入参数']),
-          outputParams: parseJsonField(row['输出参数'])
+          name: row[t('cv.pipeline.importExport.columns.name')],
+          description: row[t('cv.pipeline.importExport.columns.description')] || '',
+          metadata: parseJsonField(row[t('cv.pipeline.importExport.columns.metadata')]),
+          inputParams: parseJsonField(row[t('cv.pipeline.importExport.columns.inputParams')]),
+          outputParams: parseJsonField(row[t('cv.pipeline.importExport.columns.outputParams')])
         }
 
         // 验证元数据
@@ -498,7 +501,10 @@ const handleFileImport = async (event: Event) => {
         results.success++
       } catch (error) {
         results.failed++
-        results.errors.push(`导入流水线 "${row['流水线名称']}" 失败: ${error instanceof Error ? error.message : '未知错误'}`)
+        results.errors.push(t('cv.pipeline.notifications.importFailed', {
+          name: row[t('cv.pipeline.importExport.columns.name')],
+          error: error instanceof Error ? error.message : t('common.unknownError')
+        }))
       }
     }
 
@@ -508,33 +514,33 @@ const handleFileImport = async (event: Event) => {
     if (results.failed > 0) {
       $q.notify({
         type: 'warning',
-        message: `导入完成: ${results.success}个成功, ${results.failed}个失败`,
+        message: t('cv.pipeline.notifications.importPartialSuccess', { success: results.success, failed: results.failed }),
         position: 'top',
         timeout: 5000
       })
       
       // 显示详细错误信息
       $q.dialog({
-        title: '导入错误详情',
+        title: t('cv.pipeline.importExport.errorDetails'),
         message: results.errors.join('\n'),
         html: true,
         ok: {
-          label: '确定'
+          label: t('common.confirm')
         }
       })
     } else {
       $q.notify({
         type: 'positive',
-        message: `成功导入 ${results.success} 个流水线`,
+        message: t('cv.pipeline.notifications.importSuccess', { count: results.success }),
         position: 'top',
         timeout: 3000
       })
     }
   } catch (error) {
-    console.error('导入失败:', error)
+    console.error(t('cv.pipeline.notifications.importError'), error)
     $q.notify({
       type: 'negative',
-      message: error instanceof Error ? error.message : '导入失败',
+      message: error instanceof Error ? error.message : t('cv.pipeline.notifications.importError'),
       position: 'top',
       timeout: 5000
     })
@@ -548,46 +554,34 @@ const exportPipelines = async () => {
   try {
     // 准备导出数据
     const data = pipelines.value.map(pipeline => ({
-      '流水线名称': pipeline.name,
-      '描述': pipeline.description || '',
-      '元数据': JSON.stringify(pipeline.metadata, null, 2),
-      '输入参数': JSON.stringify(pipeline.inputParams, null, 2),
-      '输出参数': JSON.stringify(pipeline.outputParams, null, 2),
-      '创建时间': formatDate(pipeline.createdAt),
-      '更新时间': formatDate(pipeline.updatedAt)
+      [t('cv.pipeline.importExport.columns.name')]: pipeline.name,
+      [t('cv.pipeline.importExport.columns.description')]: pipeline.description || '',
+      [t('cv.pipeline.importExport.columns.metadata')]: JSON.stringify(pipeline.metadata, null, 2),
+      [t('cv.pipeline.importExport.columns.inputParams')]: JSON.stringify(pipeline.inputParams, null, 2),
+      [t('cv.pipeline.importExport.columns.outputParams')]: JSON.stringify(pipeline.outputParams, null, 2),
+      [t('cv.pipeline.importExport.columns.createdAt')]: formatDate(pipeline.createdAt),
+      [t('cv.pipeline.importExport.columns.updatedAt')]: formatDate(pipeline.updatedAt)
     }))
 
     // 创建工作簿
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Pipelines')
-
-    // 设置列宽
-    const colWidths = [
-      { wch: 20 }, // 流水线名称
-      { wch: 30 }, // 描述
-      { wch: 50 }, // 元数据
-      { wch: 40 }, // 输入参数
-      { wch: 40 }, // 输出参数
-      { wch: 20 }, // 创建时间
-      { wch: 20 }  // 更新时间
-    ]
-    ws['!cols'] = colWidths
+    XLSX.utils.book_append_sheet(wb, ws, t('cv.pipeline.importExport.sheetName'))
 
     // 导出文件
-    XLSX.writeFile(wb, `pipelines_${new Date().toISOString().split('T')[0]}.xlsx`)
+    XLSX.writeFile(wb, `${t('cv.pipeline.importExport.fileName')}_${new Date().toISOString().split('T')[0]}.xlsx`)
 
     $q.notify({
       type: 'positive',
-      message: `成功导出 ${data.length} 个流水线`,
+      message: t('cv.pipeline.notifications.exportSuccess', { count: data.length }),
       position: 'top',
       timeout: 3000
     })
   } catch (error) {
-    console.error('导出失败:', error)
+    console.error(t('cv.pipeline.notifications.exportError'), error)
     $q.notify({
       type: 'negative',
-      message: '导出失败',
+      message: t('cv.pipeline.notifications.exportError'),
       position: 'top',
       timeout: 3000
     })
@@ -600,8 +594,8 @@ const parseJsonField = (value: string | undefined): any => {
   try {
     return JSON.parse(value)
   } catch (error) {
-    console.error('JSON解析失败:', error)
-    throw new Error('JSON解析失败')
+    console.error(t('cv.pipeline.notifications.jsonParseError'), error)
+    throw new Error(t('cv.pipeline.notifications.jsonParseError'))
   }
 }
 

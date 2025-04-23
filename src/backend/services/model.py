@@ -20,6 +20,7 @@ import re
 from sqlalchemy.orm import sessionmaker
 from ..models.base import engine
 from ..common.globals import TRAINING_LOGS
+import sys
 
 # 设置日志
 logger = logging.getLogger(__name__)
@@ -48,11 +49,15 @@ class YOLOModel:
             
         try:
             if self.architecture == ModelArchitecture.YOLO_V5:
+                current_dir = os.getcwd()
+                yolov5_path = os.path.join(current_dir, 'yolov5')
+                print(yolov5_path)
                 # 使用YOLOv5加载模型
-                self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=self.model_path)
+                self.model = torch.hub.load(yolov5_path, 'custom', path=self.model_path, source="local")
             elif self.architecture == ModelArchitecture.YOLO_V8:
                 # 使用YOLOv8加载模型
                 from ultralytics import YOLO
+                print(self.model_path)
                 self.model = YOLO(self.model_path)
             elif self.architecture == ModelArchitecture.YOLO_V9:
                 # 使用YOLOv9加载模型
@@ -220,11 +225,6 @@ class ModelService:
                 parameters['conf_thres'] = 0.25
             if 'iou_thres' not in parameters:
                 parameters['iou_thres'] = 0.45
-                
-            # 验证数据集类型与模型架构是否匹配
-            if dataset.type != DatasetType.TEXT_REGION:
-                raise HTTPException(status_code=400, 
-                    detail=f"Dataset type {dataset.type} is not compatible with YOLO models")
                 
             model = Model(
                 name=name,

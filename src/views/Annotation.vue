@@ -10,11 +10,11 @@
               <!-- 标题栏 -->
               <div class="row items-center q-pb-sm">
                 <div class="col">
-                  <div class="text-h6">数据集</div>
+                  <div class="text-h6">{{ t('annotation.datasets.title') }}</div>
                 </div>
                 <div class="col-auto">
                   <q-btn icon="add" size="lg" @click="showCreateDatasetDialog">
-                    <q-tooltip>新建数据集</q-tooltip>
+                    <q-tooltip>{{ t('annotation.datasets.create') }}</q-tooltip>
                   </q-btn>
                 </div>
               </div>
@@ -22,7 +22,7 @@
               <!-- 统计信息 -->
               <div class="dataset-stats q-mb-md">
                 <div class="text-caption text-grey-7">
-                  {{ datasets?.length || 0 }} 个数据集
+                  {{ t('annotation.datasets.count', { count: datasets?.length || 0 }) }}
                 </div>
                 <q-chip v-if="currentDataset" dense :color="getDatasetTypeColor(currentDataset.type)" text-color="white"
                   size="sm">
@@ -42,7 +42,7 @@
                     <q-item-section>
                       <q-item-label>{{ dataset.name }}</q-item-label>
                       <q-item-label caption class="dataset-info">
-                        <span>{{ dataset.imageCount }} 张图片</span>
+                        <span>{{ t('annotation.datasets.imageCount', { count: dataset.imageCount }) }}</span>
                         <q-chip dense :color="getDatasetTypeColor(dataset.type)" text-color="white" size="xs">
                           {{ getDatasetTypeLabel(dataset.type) }}
                         </q-chip>
@@ -61,51 +61,51 @@
             <q-card-section class="annotation-card-section">
               <div class="row items-center q-mb-md">
                 <div class="col">
-                  <div class="text-h6">{{ currentDataset?.name || '请选择数据集' }}</div>
+                  <div class="text-h6">{{ currentDataset?.name || t('annotation.selectDataset') }}</div>
                 </div>
                 <div class="col-auto">
                   <q-btn-group flat v-if="currentDataset">
                     <!-- 批量删除按钮 -->
                     <q-btn v-if="selectedImages.length > 0" flat round icon="delete" color="negative"
                       @click="confirmDeleteSelected">
-                      <q-tooltip>删除选中</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.deleteSelected') }}</q-tooltip>
                     </q-btn>
 
                     <!-- 上传图片按钮 -->
                     <q-btn flat round icon="upload" @click="uploadImagesDialog = true">
-                      <q-tooltip>上传图片</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.upload') }}</q-tooltip>
                     </q-btn>
 
                     <!-- 重命名按钮 -->
                     <q-btn flat round icon="edit" @click="showRenameDialog(currentDataset)">
-                      <q-tooltip>重命名</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.rename') }}</q-tooltip>
                     </q-btn>
 
                     <!-- 视图切换按钮 -->
                     <q-btn flat round icon="grid_view" @click="viewMode = 'grid'"
                       :color="viewMode === 'grid' ? 'primary' : ''">
-                      <q-tooltip>网格视图</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.gridView') }}</q-tooltip>
                     </q-btn>
 
                     <q-btn flat round icon="view_carousel" @click="viewMode = 'carousel'"
                       :color="viewMode === 'carousel' ? 'primary' : ''">
-                      <q-tooltip>标注视图</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.annotationView') }}</q-tooltip>
                     </q-btn>
 
                     <q-btn flat round icon="download" @click="exportAnnotationDataset">
-                      <q-tooltip>导出标注数据集</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.export') }}</q-tooltip>
                     </q-btn>
                     <q-btn flat round icon="upload_file" @click="importAnnotationDataset">
-                      <q-tooltip>导入标注数据集</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.import') }}</q-tooltip>
                       <input type="file" accept=".xlsx" class="hidden-input" ref="fileInput"
                         @change="handleFileImport" />
                     </q-btn>
                     <q-btn flat round icon="auto_awesome" @click="openGenerateDataDialog" :disable="!currentDataset">
-                      <q-tooltip>合成数据</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.generate') }}</q-tooltip>
                     </q-btn>
                     <!-- 更多按钮 -->
                     <q-btn flat round icon="more_vert">
-                      <q-tooltip>更多</q-tooltip>
+                      <q-tooltip>{{ t('annotation.actions.more') }}</q-tooltip>
                       <q-menu>
                         <q-list padding style="min-width: 150px">
                           <q-item clickable v-close-popup @click="confirmDeleteDataset(currentDataset)"
@@ -114,7 +114,7 @@
                               <q-icon name="delete" />
                             </q-item-section>
                             <q-item-section>
-                              <q-item-label class="text-caption">删除数据集</q-item-label>
+                              <q-item-label class="text-caption">{{ t('annotation.actions.deleteDataset') }}</q-item-label>
                             </q-item-section>
                           </q-item>
                         </q-list>
@@ -180,9 +180,9 @@
                     <div class="flex flex-center full-height">
                       <div class="text-center">
                         <q-icon name="image" size="48px" color="grey-7" />
-                        <div class="text-h6 q-mt-md">请选择图片</div>
+                        <div class="text-h6 q-mt-md">{{ t('annotation.selectImage') }}</div>
                         <div class="text-subtitle1 q-mt-sm text-grey-7">
-                          从左侧图片列表中选择一张图片进行标注
+                          {{ t('annotation.selectImageHint') }}
                         </div>
                       </div>
                     </div>
@@ -231,13 +231,13 @@
     <q-dialog v-model="uploadImagesDialog">
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center">
-          <div class="text-h6">上传图片</div>
+          <div class="text-h6">{{ t('annotation.dialogs.upload.title') }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
         <q-card-section>
-          <q-file v-model="uploadFiles" label="选择图片" outlined multiple accept=".jpg,.jpeg,.png,.bmp"
+          <q-file v-model="uploadFiles" :label="t('annotation.dialogs.upload.selectFiles')" outlined multiple accept=".jpg,.jpeg,.png,.bmp"
             style="max-width: 300px">
             <template v-slot:prepend>
               <q-icon name="attach_file" />
@@ -246,8 +246,8 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="上传" color="primary" @click="handleUploadImages" :loading="uploading" />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('annotation.dialogs.upload.upload')" color="primary" @click="handleUploadImages" :loading="uploading" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -256,23 +256,23 @@
     <q-dialog v-model="createDatasetDialog">
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center">
-          <div class="text-h6">新建数据集</div>
+          <div class="text-h6">{{ t('annotation.dialogs.create.title') }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
         <q-card-section class="q-gutter-md">
-          <q-input v-model="newDatasetName" label="数据集名称" outlined :rules="[val => !!val || '请输入数据集名称']" />
+          <q-input v-model="newDatasetName" :label="t('annotation.dialogs.create.name')" outlined :rules="[val => !!val || t('annotation.dialogs.create.nameRequired')]" />
 
           <q-select v-model="newDatasetType" :options="[
-            { label: '文本区域数据集', value: DatasetType.TEXT_REGION },
-            { label: 'OCR数据集', value: DatasetType.OCR }
-          ]" label="数据集类型" outlined emit-value map-options />
+            { label: t('annotation.datasetTypes.textRegion'), value: DatasetType.TEXT_REGION },
+            { label: t('annotation.datasetTypes.ocr'), value: DatasetType.OCR }
+          ]" :label="t('annotation.dialogs.create.type')" outlined emit-value map-options />
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="创建" color="primary" @click="createDataset" :loading="creating"
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('annotation.dialogs.create.create')" color="primary" @click="createDataset" :loading="creating"
             :disable="!newDatasetName.trim()" />
         </q-card-actions>
       </q-card>
@@ -282,17 +282,17 @@
     <q-dialog v-model="renameDatasetDialog" persistent>
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">重命名数据集</div>
+          <div class="text-h6">{{ t('annotation.dialogs.rename.title') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          <q-input v-model="renameDatasetName" label="数据集名称" dense autofocus :rules="[val => !!val || '请输入数据集名称']"
+          <q-input v-model="renameDatasetName" :label="t('annotation.dialogs.rename.name')" dense autofocus :rules="[val => !!val || t('annotation.dialogs.rename.nameRequired')]"
             @keyup.enter="renameDataset" />
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
-          <q-btn flat label="取消" v-close-popup />
-          <q-btn flat label="确定" :loading="renaming" :disable="!renameDatasetName" @click="renameDataset" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn flat :label="t('common.confirm')" :loading="renaming" :disable="!renameDatasetName" @click="renameDataset" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -301,25 +301,24 @@
     <q-dialog v-model="deleteConfirmDialog">
       <q-card>
         <q-card-section class="row items-center">
-          <div class="text-h6">确认删除</div>
+          <div class="text-h6">{{ t('annotation.dialogs.delete.title') }}</div>
         </q-card-section>
 
         <q-card-section>
           <template v-if="selectedImages.length > 0">
-            确定要删除选中的 {{ selectedImages.length }} 张图片吗？此操作不可恢复。
+            {{ t('annotation.dialogs.delete.confirmImages', { count: selectedImages.length }) }}
           </template>
           <template v-else>
-            确定要删除数据集 "{{ datasetToDelete?.name }}" 吗？此操作不可恢复。
+            {{ t('annotation.dialogs.delete.confirmDataset', { name: datasetToDelete?.name }) }}
           </template>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="handleDelete" :loading="deleting" />
+          <q-btn flat :label="t('common.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('common.delete')" color="negative" @click="handleDelete" :loading="deleting" />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
 
     <generate-data 
       v-if="currentDataset"
@@ -341,7 +340,9 @@ import TextRegionAnnotator from '../components/annotation/TextRegionAnnotator.vu
 import GenerateData from '../components/annotation/GenerateData.vue'
 import OCRAnnotator from '../components/annotation/OCRAnnotator.vue'
 import * as XLSX from 'xlsx'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const $q = useQuasar()
 const annotationService = new AnnotationService()
 
@@ -389,7 +390,7 @@ const loadDatasets = async () => {
     console.error('加载数据集失败:', error)
     $q.notify({
       type: 'negative',
-      message: '加载数据集失败，请重试',
+      message: t('annotation.notifications.loadDatasetsFailed'),
       position: 'top'
     })
   }
@@ -412,14 +413,14 @@ const createDataset = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '创建数据集成功',
+      message: t('annotation.notifications.createDatasetSuccess'),
       position: 'top'
     })
   } catch (error) {
     console.error('创建数据集失败:', error)
     $q.notify({
       type: 'negative',
-      message: '创建数据集失败，请重试',
+      message: t('annotation.notifications.createDatasetFailed'),
       position: 'top'
     })
   } finally {
@@ -453,14 +454,14 @@ const renameDataset = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '重命名成功',
+      message: t('annotation.notifications.renameSuccess'),
       position: 'top'
     })
   } catch (error) {
     console.error('重命名数据集失败:', error)
     $q.notify({
       type: 'negative',
-      message: error instanceof Error ? error.message : '重命名失败，请重试',
+      message: error instanceof Error ? error.message : t('annotation.notifications.renameFailed'),
       position: 'top'
     })
   } finally {
@@ -487,14 +488,14 @@ const deleteDataset = async () => {
 
     $q.notify({
       type: 'positive',
-      message: '删除数据集成功',
+      message: t('annotation.notifications.deleteDatasetSuccess'),
       position: 'top'
     })
   } catch (error) {
     console.error('删除数据集失败:', error)
     $q.notify({
       type: 'negative',
-      message: '删除数据集失败，请重试',
+      message: t('annotation.notifications.deleteDatasetFailed'),
       position: 'top'
     })
   } finally {
@@ -640,14 +641,14 @@ const deleteImage = async (image: Image) => {
 
     $q.notify({
       type: 'positive',
-      message: '删除图片成功',
+      message: t('annotation.notifications.deleteImageSuccess'),
       position: 'top'
     })
   } catch (error) {
     console.error('删除图片失败:', error)
     $q.notify({
       type: 'negative',
-      message: '删除图片失败，请重试',
+      message: t('annotation.notifications.deleteImageFailed'),
       position: 'top'
     })
   }
@@ -945,16 +946,16 @@ const confirmDeleteSelected = () => {
   if (selectedImages.value.length === 0) return
 
   $q.dialog({
-    title: '确认删除',
-    message: `确定要删除选中的 ${selectedImages.value.length} 张图片吗？`,
+    title: t('annotation.dialogs.delete.title'),
+    message: t('annotation.dialogs.delete.confirmImages', { count: selectedImages.value.length }),
     persistent: true,
     ok: {
-      label: '删除',
+      label: t('common.delete'),
       color: 'negative',
       flat: true
     },
     cancel: {
-      label: '取消',
+      label: t('common.cancel'),
       color: 'primary',
       flat: true
     }
@@ -987,14 +988,14 @@ const confirmDeleteSelected = () => {
 
       $q.notify({
         type: 'positive',
-        message: '删除图片成功',
+        message: t('annotation.notifications.deleteImageSuccess'),
         position: 'top'
       })
     } catch (error) {
       console.error('批量删除图片失败:', error)
       $q.notify({
         type: 'negative',
-        message: '删除图片失败，请重试',
+        message: t('annotation.notifications.deleteImageFailed'),
         position: 'top'
       })
     } finally {
@@ -1006,8 +1007,8 @@ const confirmDeleteSelected = () => {
 // 数据集类型相关
 const getDatasetTypeLabel = (type: DatasetType): string => {
   const labels = {
-    [DatasetType.TEXT_REGION]: '文本区域',
-    [DatasetType.OCR]: 'OCR识别'
+    [DatasetType.TEXT_REGION]: t('annotation.datasetTypes.textRegion'),
+    [DatasetType.OCR]: t('annotation.datasetTypes.ocr')
   }
   return labels[type]
 }

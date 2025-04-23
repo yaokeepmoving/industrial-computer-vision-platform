@@ -4,13 +4,13 @@
     <div class="controls-panel">
       <!-- 缩放控制 -->
       <q-btn round flat dense color="white" icon="remove" @click="zoomOut">
-        <q-tooltip>缩小</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.zoomOut') }}</q-tooltip>
       </q-btn>
 
       <div class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</div>
 
       <q-btn round flat dense color="white" icon="add" @click="zoomIn">
-        <q-tooltip>放大</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.zoomIn') }}</q-tooltip>
       </q-btn>
 
       <div class="control-divider-vertical"></div>
@@ -18,12 +18,12 @@
       <!-- 矩形标注按钮 -->
       <q-btn round flat dense :color="isDrawing ? 'negative' : 'white'"
         icon="rectangle" @click="activateDrawingTool()">
-        <q-tooltip>字符标注 (矩形)</q-tooltip>
+        <q-tooltip>{{ t('annotator.tools.character') }}</q-tooltip>
       </q-btn>
 
       <!-- 取消绘制按钮 -->
       <q-btn round flat dense color="negative" icon="close" @click="cancelDrawing" v-if="isDrawing">
-        <q-tooltip>取消绘制</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.cancelDrawing') }}</q-tooltip>
       </q-btn>
 
       <div class="control-divider-vertical"></div>
@@ -34,24 +34,24 @@
         icon="delete" 
         @click="deleteSelected"
         :disable="!selectedAnnotation">
-        <q-tooltip>删除选中 {{ selectedAnnotation ? '(' + getAnnotationLabel(selectedAnnotation) + ')' : '' }}</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.deleteSelectedChar', { char: selectedAnnotation ? getAnnotationLabel(selectedAnnotation) : '' }) }}</q-tooltip>
       </q-btn>
 
       <!-- 保存按钮 -->
       <q-btn round flat dense color="white" icon="save" @click="saveAnnotations">
-        <q-tooltip>保存标注</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.save') }}</q-tooltip>
       </q-btn>
 
       <!-- 重新加载按钮 -->
       <q-btn round flat dense color="white" icon="refresh" @click="loadAnnotations">
-        <q-tooltip>重新加载</q-tooltip>
+        <q-tooltip>{{ t('annotator.controls.reload') }}</q-tooltip>
       </q-btn>
     </div>
 
     <!-- 字符选择面板 -->
     <div class="character-panel">
       <div class="character-panel-header">
-        <div class="text-white text-caption">当前字符:</div>
+        <div class="text-white text-caption">{{ t('annotator.ocr.currentChar') }}:</div>
         <q-input 
           v-model="currentCharacter" 
           dense 
@@ -59,17 +59,17 @@
           bg-color="rgba(255,255,255,0.1)"
           class="character-input"
           maxlength="1"
-          :rules="[val => val.length === 1 || '请输入单个字符']">
+          :rules="[val => val.length === 1 || t('annotator.ocr.singleCharRequired')]">
           <template v-slot:append>
             <q-btn round flat dense icon="edit" size="xs" @click="showCharacterSelector = true">
-              <q-tooltip>选择字符</q-tooltip>
+              <q-tooltip>{{ t('annotator.ocr.selectChar') }}</q-tooltip>
             </q-btn>
           </template>
         </q-input>
       </div>
       
       <div class="recent-characters">
-        <div class="text-white text-caption q-mb-xs">常用字符:</div>
+        <div class="text-white text-caption q-mb-xs">{{ t('annotator.ocr.commonChars') }}:</div>
         <div class="character-chips">
           <q-chip 
             v-for="char in recentCharacters" 
@@ -89,7 +89,7 @@
             color="white"
             @click="showCharacterSelector = true">
             <q-icon name="add" size="xs" class="q-mr-xs" />
-            更多
+            {{ t('annotator.ocr.more') }}
           </q-chip>
         </div>
       </div>
@@ -113,15 +113,15 @@
               </q-avatar>
             </q-item-section>
             <q-item-section>
-              <q-item-label>字符: {{ getAnnotationLabel(annotation) }}</q-item-label>
+              <q-item-label>{{ t('annotator.ocr.char') }}: {{ getAnnotationLabel(annotation) }}</q-item-label>
               <q-item-label caption>
-                位置: {{ formatBounds(annotation) }}
+                {{ t('annotator.ocr.position') }}: {{ formatBounds(annotation) }}
               </q-item-label>
             </q-item-section>
             <q-item-section side>
               <q-btn flat round dense size="sm" icon="delete" color="negative" 
                 @click.stop="deleteAnnotation(annotation.id)">
-                <q-tooltip>删除</q-tooltip>
+                <q-tooltip>{{ t('common.delete') }}</q-tooltip>
               </q-btn>
             </q-item-section>
           </q-item>
@@ -133,20 +133,20 @@
     <q-dialog v-model="showCharacterSelector">
       <q-card style="min-width: 350px" dark>
         <q-card-section>
-          <div class="text-h6">选择标注字符</div>
+          <div class="text-h6">{{ t('annotator.ocr.selectCharTitle') }}</div>
         </q-card-section>
         
         <q-card-section>
           <q-input 
             v-model="currentCharacter" 
-            label="输入字符" 
+            :label="t('annotator.ocr.inputChar')" 
             maxlength="1"
             autofocus
-            :rules="[val => val.length === 1 || '请输入单个字符']">
+            :rules="[val => val.length === 1 || t('annotator.ocr.singleCharRequired')]">
           </q-input>
           
           <div class="q-mt-md">
-            <div class="text-subtitle2 q-mb-sm">常用字符集</div>
+            <div class="text-subtitle2 q-mb-sm">{{ t('annotator.ocr.commonCharSets') }}</div>
             <div class="character-grid">
               <q-btn v-for="char in commonCharacterSets.digits" :key="'digit-'+char"
                 :label="char" 
@@ -178,7 +178,7 @@
             </div>
             
             <div class="q-mt-sm">
-              <div class="text-subtitle2">最近使用</div>
+              <div class="text-subtitle2">{{ t('annotator.ocr.recentlyUsed') }}</div>
               <div class="character-grid">
                 <q-btn v-for="char in recentCharacters" :key="'recent-'+char"
                   :label="char" 
@@ -193,8 +193,8 @@
         </q-card-section>
         
         <q-card-actions align="right">
-          <q-btn flat label="取消" v-close-popup />
-          <q-btn flat label="确定" color="primary" 
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn flat :label="t('common.confirm')" color="primary" 
             v-close-popup 
             :disable="!currentCharacter || currentCharacter.length !== 1" 
             @click="addToRecentCharacters(currentCharacter)" />
@@ -211,9 +211,11 @@ import OpenSeadragon from 'openseadragon'
 import { createOSDAnnotator } from '@annotorious/openseadragon'
 import '@annotorious/openseadragon/annotorious-openseadragon.css'
 import { AnnotationService } from '../../services/annotation'
+import { useI18n } from 'vue-i18n'
 
 // Get Quasar instance
 const $q = useQuasar()
+const { t } = useI18n()
 const annotationService = new AnnotationService()
 
 // Define props
@@ -573,7 +575,7 @@ const loadAnnotations = async () => {
     console.error('Error loading annotations:', error)
     $q.notify({
       type: 'negative',
-      message: '加载标注失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      message: t('annotator.notifications.loadFailed'),
       position: 'top'
     })
   }
@@ -602,15 +604,14 @@ const saveAnnotations = async () => {
     // Notify success
     $q.notify({
       type: 'positive',
-      message: '标注已保存',
-      position: 'top',
-      timeout: 1000
+      message: t('annotator.notifications.saveSuccess'),
+      position: 'top'
     })
   } catch (error) {
     console.error('Failed to save annotations:', error)
     $q.notify({
       type: 'negative',
-      message: '保存标注失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      message: t('annotator.notifications.saveFailed'),
       position: 'top'
     })
   }
@@ -628,7 +629,7 @@ const activateDrawingTool = () => {
   if (!currentCharacter.value || currentCharacter.value.length !== 1) {
     $q.notify({
       type: 'warning',
-      message: '请先选择一个字符',
+      message: t('annotator.ocr.selectCharFirst'),
       position: 'top'
     })
     showCharacterSelector.value = true
@@ -650,7 +651,7 @@ const cancelDrawing = () => {
 }
 
 // Update the deleteSelected function to match TextRegionAnnotator's approach
-const deleteSelected = () => {
+const deleteSelected = async () => {
   console.log('Delete selected called, selected annotation:', selectedAnnotation.value)
   
   if (!selectedAnnotation.value) {
@@ -683,7 +684,7 @@ const deleteSelected = () => {
     console.error('Error deleting annotation:', error)
     $q.notify({
       type: 'negative',
-      message: '删除标注失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      message: t('annotator.notifications.deleteFailed'),
       position: 'top'
     })
   }
@@ -720,7 +721,7 @@ const deleteAnnotation = async (annotationId: string) => {
     console.error('Failed to delete annotation:', error)
     $q.notify({
       type: 'negative',
-      message: '删除标注失败: ' + (error instanceof Error ? error.message : '未知错误'),
+      message: t('annotator.notifications.deleteFailed'),
       position: 'top'
     })
   }

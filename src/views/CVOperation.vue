@@ -12,13 +12,13 @@
       <q-tab name="single">
         <div class="row items-center">
           <q-icon name="filter_1" class="q-mr-sm" />
-          <span>单步处理</span>
+          <span>{{ t('cvOperation.tabs.single') }}</span>
         </div>
       </q-tab>
       <q-tab name="pipeline">
         <div class="row items-center">
           <q-icon name="account_tree" class="q-mr-sm" />
-          <span>流水线处理</span>
+          <span>{{ t('cvOperation.tabs.pipeline') }}</span>
         </div>
       </q-tab>
     </q-tabs>
@@ -43,9 +43,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import SingleOperation from '@/components/cv/SingleOperation.vue'
 import PipelineOperation from '@/components/cv/PipelineOperation.vue'
 
+const { t } = useI18n()
 const activeTab = ref('single')
 </script>
 

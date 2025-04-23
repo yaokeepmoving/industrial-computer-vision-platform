@@ -6,22 +6,22 @@
         <!-- 左侧按钮组 -->
         <div class="col-auto">
           <div class="row items-center q-gutter-sm">
-            <q-btn color="primary" icon="add" label="新建操作" dense @click="createNewOperation" />
+            <q-btn color="primary" icon="add" :label="t('cv.operation.new')" dense @click="createNewOperation" />
             <q-btn-group flat>
-              <q-btn flat dense icon="upload_file" label="导入" @click="importOperations">
-                <q-tooltip>导入操作配置</q-tooltip>
+              <q-btn flat dense icon="upload_file" :label="t('cv.operation.import')" @click="importOperations">
+                <q-tooltip>{{ t('cv.operation.importTooltip') }}</q-tooltip>
                 <input type="file" accept=".xlsx" class="hidden-input" ref="fileInput" @change="handleFileImport" />
               </q-btn>
-              <q-btn flat dense icon="download" label="导出" @click="exportOperations">
-                <q-tooltip>导出操作配置</q-tooltip>
+              <q-btn flat dense icon="download" :label="t('cv.operation.export')" @click="exportOperations">
+                <q-tooltip>{{ t('cv.operation.exportTooltip') }}</q-tooltip>
               </q-btn>
             </q-btn-group>
             <q-btn v-if="selected.length > 0" flat dense color="negative" icon="delete_sweep"
-              :label="'删除 (' + selected.length + ')'" @click="confirmBatchDelete">
-              <q-tooltip>批量删除选中的操作</q-tooltip>
+              :label="t('cv.operation.deleteSelected', { count: selected.length })" @click="confirmBatchDelete">
+              <q-tooltip>{{ t('cv.operation.deleteTooltip') }}</q-tooltip>
             </q-btn>
             <q-chip dense color="grey-7" text-color="white" icon="science" size="sm">
-              {{ operations.length }} 个操作
+              {{ t('cv.operation.operationCount', { count: operations.length }) }}
             </q-chip>
           </div>
         </div>
@@ -29,7 +29,7 @@
         <!-- 右侧搜索框和刷新按钮 -->
         <div class="col">
           <div class="row items-center justify-end">
-            <q-input v-model="searchText" placeholder="搜索操作名称或描述" dense outlined class="search-input"
+            <q-input v-model="searchText" :placeholder="t('cv.operation.search')" dense outlined class="search-input"
               style="width: 250px">
               <template v-slot:prepend>
                 <q-icon name="search" />
@@ -39,7 +39,7 @@
               </template>
             </q-input>
             <q-btn flat dense icon="refresh" class="q-ml-sm" @click="loadOperations" :loading="loading">
-              <q-tooltip>刷新列表</q-tooltip>
+              <q-tooltip>{{ t('cv.operation.refresh') }}</q-tooltip>
             </q-btn>
           </div>
         </div>
@@ -71,13 +71,13 @@
           <q-td :props="props" class="action-cell">
             <q-btn-group flat>
               <q-btn flat dense icon="edit" @click="editOperation(props.row)">
-                <q-tooltip>编辑</q-tooltip>
+                <q-tooltip>{{ t('cv.operation.actions.edit') }}</q-tooltip>
               </q-btn>
               <q-btn flat dense icon="play_arrow" color="positive" @click.stop="openTestPanel(props.row)">
-                <q-tooltip>测试</q-tooltip>
+                <q-tooltip>{{ t('cv.operation.actions.test') }}</q-tooltip>
               </q-btn>
               <q-btn flat dense icon="delete" color="negative" @click.stop="confirmDelete(props.row)">
-                <q-tooltip>删除</q-tooltip>
+                <q-tooltip>{{ t('cv.operation.actions.delete') }}</q-tooltip>
               </q-btn>
             </q-btn-group>
           </q-td>
@@ -100,8 +100,8 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="取消" color="primary" v-close-popup />
-          <q-btn flat label="删除" color="negative" @click="deleteOperation" />
+          <q-btn flat :label="t('cv.operation.deleteConfirm.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="t('cv.operation.deleteConfirm.confirm')" color="negative" @click="deleteOperation" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -111,13 +111,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { cvOperationService } from '@/services/cv_operation'
 import { CVOperation, CreateCVOperationRequest } from '@/services/cv_operation'
 import * as XLSX from 'xlsx'
 import OperationEditor from './OperationEditor.vue'
 import OperationTestPanel from './OperationTestPanel.vue'
 
-const $q = useQuasar();
+const { t } = useI18n()
+const $q = useQuasar()
+
 // 状态变量
 const operations = ref<CVOperation[]>([])
 const loading = ref(false)
@@ -148,27 +151,27 @@ const columns = [
   {
     name: 'name',
     required: true,
-    label: '操作名称',
+    label: t('cv.operation.columns.name'),
     align: 'left' as const,
     field: 'name',
     sortable: true
   },
   {
     name: 'description',
-    label: '描述',
+    label: t('cv.operation.columns.description'),
     align: 'left' as const,
     field: 'description'
   },
   {
     name: 'created_at',
-    label: '创建时间',
+    label: t('cv.operation.columns.createdAt'),
     align: 'left' as const,
     field: 'createdAt',
     sortable: true
   },
   {
     name: 'actions',
-    label: '操作',
+    label: t('cv.operation.columns.actions'),
     align: 'center' as const,
     field: 'actions'
   }
@@ -186,9 +189,9 @@ const filteredOperations = computed(() => {
 
 const deleteDialogMessage = computed(() => {
   if (operationToDelete.value) {
-    return `确定要删除操作 "${operationToDelete.value.name}" 吗？`
+    return t('cv.operation.deleteConfirm.singleMessage', { name: operationToDelete.value.name })
   }
-  return `确定要删除选中的 ${selected.value.length} 个操作吗？`
+  return t('cv.operation.deleteConfirm.batchMessage', { count: selected.value.length })
 })
 
 // 方法
@@ -197,10 +200,10 @@ const loadOperations = async () => {
   try {
     operations.value = await cvOperationService.getOperations()
   } catch (error) {
-    console.error('加载操作失败:', error)
+    console.error(t('cv.operation.notifications.loadError'), error)
     $q.notify({
       type: 'negative',
-      message: '加载操作失败'
+      message: t('cv.operation.notifications.loadError')
     })
   } finally {
     loading.value = false
@@ -287,11 +290,11 @@ const handleSubmit = async (operationData: Partial<CVOperation>) => {
   try {
     // 验证操作名称
     if (!operationData.name?.trim()) {
-      throw new Error('操作名称不能为空')
+      throw new Error(t('cv.operation.validation.nameRequired'))
     }
 
     if (!operationData.code?.includes('def process(') || !operationData.code?.includes('return {')) {
-      throw new Error('代码格式不正确')
+      throw new Error(t('cv.operation.validation.invalidCode'))
     }
 
     // 确保inputParams和outputParams存在
@@ -328,15 +331,15 @@ const handleSubmit = async (operationData: Partial<CVOperation>) => {
     await loadOperations()
     $q.notify({
       type: 'positive',
-      message: '保存成功',
+      message: t('cv.operation.notifications.saveSuccess'),
       position: 'top',
       timeout: 3000
     })
   } catch (error) {
-    console.error('保存失败:', error)
+    console.error(t('cv.operation.notifications.saveError'), error)
     $q.notify({
       type: 'negative',
-      message: error instanceof Error ? error.message : '保存失败',
+      message: error instanceof Error ? error.message : t('cv.operation.notifications.saveError'),
       position: 'top',
       timeout: 5000
     })
@@ -408,14 +411,14 @@ const handleFileImport = async (event: Event) => {
 
         // 验证代码格式
         if (!operation.code.includes('def process(') || !operation.code.includes('return {')) {
-          throw new Error('代码格式不正确')
+          throw new Error(t('cv.operation.validation.invalidCode'))
         }
 
         await cvOperationService.createOperation(operation as CreateCVOperationRequest)
         results.success++
       } catch (error) {
         results.failed++
-        results.errors.push(`导入操作 "${row['操作名称']}" 失败: ${error instanceof Error ? error.message : '未知错误'}`)
+        results.errors.push(`${t('cv.operation.import.failed', { name: row['操作名称'] })}: ${error instanceof Error ? error.message : t('common.unknownError')}`)
       }
     }
 
@@ -425,33 +428,33 @@ const handleFileImport = async (event: Event) => {
     if (results.failed > 0) {
       $q.notify({
         type: 'warning',
-        message: `导入完成: ${results.success}个成功, ${results.failed}个失败`,
+        message: t('cv.operation.import.partialSuccess', { success: results.success, failed: results.failed }),
         position: 'top',
         timeout: 5000
       })
 
       // 显示详细错误信息
       $q.dialog({
-        title: '导入错误详情',
+        title: t('cv.operation.importExport.importErrorDetails'),
         message: results.errors.join('\n'),
         html: true,
         ok: {
-          label: '确定'
+          label: t('common.confirm')
         }
       })
     } else {
       $q.notify({
         type: 'positive',
-        message: `成功导入 ${results.success} 个操作`,
+        message: t('cv.operation.notifications.importSuccess', { count: results.success }),
         position: 'top',
         timeout: 3000
       })
     }
   } catch (error) {
-    console.error('导入失败:', error)
+    console.error(t('cv.operation.notifications.importError'), error)
     $q.notify({
       type: 'negative',
-      message: error instanceof Error ? error.message : '导入失败',
+      message: error instanceof Error ? error.message : t('cv.operation.notifications.importError'),
       position: 'top',
       timeout: 5000
     })
@@ -465,46 +468,34 @@ const exportOperations = async () => {
   try {
     // 准备导出数据
     const data = operations.value.map(op => ({
-      '操作名称': op.name,
-      '描述': op.description || '',
-      '代码': op.code,
-      '输入参数': JSON.stringify(op.inputParams, null, 2),
-      '输出参数': JSON.stringify(op.outputParams, null, 2),
-      '创建时间': formatDate(op.createdAt),
-      '更新时间': formatDate(op.updatedAt)
+      [t('cv.operation.importExport.exportColumns.name')]: op.name,
+      [t('cv.operation.importExport.exportColumns.description')]: op.description || '',
+      [t('cv.operation.importExport.exportColumns.code')]: op.code,
+      [t('cv.operation.importExport.exportColumns.inputParams')]: JSON.stringify(op.inputParams, null, 2),
+      [t('cv.operation.importExport.exportColumns.outputParams')]: JSON.stringify(op.outputParams, null, 2),
+      [t('cv.operation.importExport.exportColumns.createdAt')]: formatDate(op.createdAt),
+      [t('cv.operation.importExport.exportColumns.updatedAt')]: formatDate(op.updatedAt)
     }))
 
     // 创建工作簿
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Operations')
-
-    // 设置列宽
-    const colWidths = [
-      { wch: 20 }, // 操作名称
-      { wch: 30 }, // 描述
-      { wch: 50 }, // 代码
-      { wch: 40 }, // 输入参数
-      { wch: 40 }, // 输出参数
-      { wch: 20 }, // 创建时间
-      { wch: 20 }  // 更新时间
-    ]
-    ws['!cols'] = colWidths
+    XLSX.utils.book_append_sheet(wb, ws, t('cv.operation.importExport.exportSheetName'))
 
     // 导出文件
-    XLSX.writeFile(wb, `cv_operations_${new Date().toISOString().split('T')[0]}.xlsx`)
+    XLSX.writeFile(wb, `${t('cv.operation.importExport.exportFileName')}_${new Date().toISOString().split('T')[0]}.xlsx`)
 
     $q.notify({
       type: 'positive',
-      message: `成功导出 ${data.length} 个操作`,
+      message: t('cv.operation.notifications.exportSuccess', { count: data.length }),
       position: 'top',
       timeout: 3000
     })
   } catch (error) {
-    console.error('导出失败:', error)
+    console.error(t('cv.operation.notifications.exportError'), error)
     $q.notify({
       type: 'negative',
-      message: '导出失败',
+      message: t('cv.operation.notifications.exportError'),
       position: 'top',
       timeout: 3000
     })

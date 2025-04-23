@@ -96,14 +96,14 @@ class DashboardService:
             
             # 判断系统状态
             status = "normal"
-            message = "系统运行正常"
+            message = "dashboard.systemStatus.systemNormal"
             
             if cpu_percent > 90 or memory_percent > 90 or disk_percent > 90:
                 status = "error"
-                message = "系统资源紧张"
+                message = "dashboard.systemStatus.systemResourceStress"
             elif cpu_percent > 70 or memory_percent > 70 or disk_percent > 70:
                 status = "warning"
-                message = "系统负载较高"
+                message = "dashboard.systemStatus.systemLoadHigh"
             
             return {
                 "status": status,
@@ -120,7 +120,7 @@ class DashboardService:
             return {
                 "status": "error",
                 "uptime": 0,
-                "message": "无法获取系统状态"
+                "message": "dashboard.systemStatus.systemStatusError"
             }
     
     def get_detection_stats(self):

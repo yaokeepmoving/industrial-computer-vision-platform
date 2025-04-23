@@ -4,11 +4,11 @@
       <div class="text-center">
         <q-icon name="error_outline" size="100px" color="negative" />
         <div class="text-h4 q-mt-md">404</div>
-        <div class="text-subtitle1 q-mt-sm">页面未找到</div>
+        <div class="text-subtitle1 q-mt-sm">{{ t('notFound.message') }}</div>
         <q-btn
           color="primary"
           icon="home"
-          label="返回首页"
+          :label="t('notFound.backToHome')"
           to="/"
           class="q-mt-lg"
         />
@@ -17,8 +17,10 @@
   </q-page>
 </template>
 
-<script setup>
-// 组件逻辑待实现
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 </script>
 
 <style lang="scss" scoped>

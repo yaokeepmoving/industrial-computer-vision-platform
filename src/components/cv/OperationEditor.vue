@@ -5,14 +5,14 @@
             <q-card-section class="editor-header row items-center q-py-sm">
                 <div class="row items-center">
                     <q-icon name="code" size="24px" color="info" class="q-mr-sm" />
-                    <div class="text-h6">{{ operation.id ? '编辑操作' : '新建操作' }}</div>
+                    <div class="text-h6">{{ operation.id ? t('cv.operationEditor.title.edit') : t('cv.operationEditor.title.new') }}</div>
                 </div>
                 <q-space />
                 <q-btn-group flat>
-                    <q-btn color="secondary" icon="science" label="运行" @click="showTestPanel = true" />
-                    <q-btn :loading="saving" color="primary" icon="save" label="保存" @click="handleSubmit" />
+                    <q-btn color="secondary" icon="science" :label="t('cv.operationEditor.actions.test')" @click="showTestPanel = true" />
+                    <q-btn :loading="saving" color="primary" icon="save" :label="t('cv.operationEditor.actions.save')" @click="handleSubmit" />
                     <q-btn flat icon="close" @click="handleClose">
-                        <q-tooltip>关闭</q-tooltip>
+                        <q-tooltip>{{ t('cv.operationEditor.actions.close') }}</q-tooltip>
                     </q-btn>
                 </q-btn-group>
             </q-card-section>
@@ -24,17 +24,17 @@
                     <div class="col-auto form-panel">
                         <div class="form-container">
                             <!-- 基本信息卡片 -->
-                            <q-expansion-item default-opened icon="info" label="基本信息" header-class="text-primary">
+                            <q-expansion-item default-opened icon="info" :label="t('cv.operationEditor.basicInfo.title')" header-class="text-primary">
                                 <q-card flat bordered>
                                     <q-card-section>
-                                        <q-input v-model="localOperation.name" label="操作名称"
-                                            :rules="[val => !!val || '请输入操作名称']" class="q-mb-md" outlined dense>
+                                        <q-input v-model="localOperation.name" :label="t('cv.operationEditor.basicInfo.name')"
+                                            :rules="[val => !!val || t('cv.operationEditor.basicInfo.nameRequired')]" class="q-mb-md" outlined dense>
                                             <template v-slot:prepend>
                                                 <q-icon name="label" />
                                             </template>
                                         </q-input>
 
-                                        <q-input v-model="localOperation.description" label="描述" type="textarea"
+                                        <q-input v-model="localOperation.description" :label="t('cv.operationEditor.basicInfo.description')" type="textarea"
                                             class="q-mb-md" outlined dense autogrow>
                                             <template v-slot:prepend>
                                                 <q-icon name="description" />
@@ -45,12 +45,12 @@
                             </q-expansion-item>
 
                             <!-- 参数配置部分 -->
-                            <q-expansion-item default-opened icon="settings" label="参数配置" header-class="text-primary">
+                            <q-expansion-item default-opened icon="settings" :label="t('cv.operationEditor.parameters.title')" header-class="text-primary">
                                 <q-card flat bordered>
                                     <q-tabs v-model="activeParamTab" dense class="text-grey" active-class="text-primary"
                                         indicator-color="primary" align="justify" narrow-indicator>
-                                        <q-tab name="input" icon="input" label="输入参数" />
-                                        <q-tab name="output" icon="output" label="输出参数" />
+                                        <q-tab name="input" icon="input" :label="t('cv.operationEditor.parameters.tabs.input')" />
+                                        <q-tab name="output" icon="output" :label="t('cv.operationEditor.parameters.tabs.output')" />
                                     </q-tabs>
 
                                     <q-separator />
@@ -66,7 +66,7 @@
                                                             <div class="row full-width q-col-gutter-sm">
                                                                 <div class="col-12">
                                                                     <div class="row items-center justify-between">
-                                                                        <div class="text-subtitle2">参数 {{ index + 1 }}
+                                                                        <div class="text-subtitle2">{{ t('cv.operationEditor.parameters.param', { index: index + 1 }) }}
                                                                         </div>
                                                                         <q-btn flat round dense color="negative"
                                                                             icon="delete"
@@ -79,7 +79,7 @@
                                                         </q-item>
                                                     </q-list>
                                                 </div>
-                                                <q-btn flat class="full-width q-mt-sm" icon="add" label="添加输入参数"
+                                                <q-btn flat class="full-width q-mt-sm" icon="add" :label="t('cv.operationEditor.parameters.addInput')"
                                                     @click="addInputParam" />
                                             </div>
                                         </q-tab-panel>
@@ -94,7 +94,7 @@
                                                             <div class="row full-width q-col-gutter-sm">
                                                                 <div class="col-12">
                                                                     <div class="row items-center justify-between">
-                                                                        <div class="text-subtitle2">参数 {{ index + 1 }}
+                                                                        <div class="text-subtitle2">{{ t('cv.operationEditor.parameters.param', { index: index + 1 }) }}
                                                                         </div>
                                                                         <q-btn flat round dense color="negative"
                                                                             icon="delete"
@@ -107,7 +107,7 @@
                                                         </q-item>
                                                     </q-list>
                                                 </div>
-                                                <q-btn flat class="full-width q-mt-sm" icon="add" label="添加输出参数"
+                                                <q-btn flat class="full-width q-mt-sm" icon="add" :label="t('cv.operationEditor.parameters.addOutput')"
                                                     @click="addOutputParam" />
                                             </div>
                                         </q-tab-panel>
@@ -121,7 +121,7 @@
                     <div class="col code-panel">
                         <q-card flat bordered class="code-editor-card">
                             <q-card-section class="code-editor-header">
-                                <div class="text-subtitle2">Python 代码编辑器</div>
+                                <div class="text-subtitle2">{{ t('cv.operationEditor.codeEditor.title') }}</div>
                             </q-card-section>
                             <q-separator />
                             <div id="monaco-editor" class="editor-container" />
@@ -143,15 +143,24 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { debounce } from 'lodash'
 import * as monaco from 'monaco-editor'
+import { useI18n } from 'vue-i18n'
 import { CVOperation, ParamType } from '@/services/cv_operation'
 import ParameterInput from './ParameterInput.vue'
 import { toRaw } from 'vue'
 import OperationTestPanel from './OperationTestPanel.vue'
 
+const { t } = useI18n()
+
 const props = defineProps<{
     modelValue: boolean
-    operation: Partial<CVOperation>
+    operation: CVOperation
     saving: boolean
+}>()
+
+const emit = defineEmits<{
+    'update:modelValue': [value: boolean]
+    'submit': [operation: Partial<CVOperation>]
+    'update:operation': [operation: Partial<CVOperation>]
 }>()
 
 const paramTypeOptions = Object.values(ParamType).map(type => {
@@ -169,12 +178,6 @@ const paramTypeOptions = Object.values(ParamType).map(type => {
         icon: iconMap[type]
     }
 })
-
-const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    'submit': [operation: Partial<CVOperation>]
-    'update:operation': [operation: Partial<CVOperation>]
-}>()
 
 // 编辑器状态管理
 const editor = ref<any>(null)

@@ -6,7 +6,7 @@
         <q-card class="camera-card">
           <q-card-section>
             <div class="row items-center">
-              <div class="text-h6">实时监控</div>
+              <div class="text-h6">{{ t('realtime.title') }}</div>
               <q-space />
               <q-select
                 v-model="selectedCamera"
@@ -14,7 +14,7 @@
                 option-label="name"
                 option-value="id"
                 color="primary"
-                label="选择相机"
+                :label="t('realtime.camera.select')"
                 dense
                 outlined
                 class="camera-select"
@@ -48,7 +48,7 @@
             <div class="row q-col-gutter-md q-mt-md">
               <!-- 视频预览 -->
               <div :class="processingStream ? 'col-6' : 'col-12'">
-                <div class="view-label q-mb-sm">相机视频</div>
+                <div class="view-label q-mb-sm">{{ t('realtime.camera.video') }}</div>
                 <camera-capture 
                   class="source-preview"
                   :stream-url="selectedCamera ? getStreamUrl(selectedCamera) : ''"
@@ -63,7 +63,7 @@
               
               <!-- 处理后的视频流显示 -->
               <div v-if="processingStream" class="col-6">
-                <div class="view-label q-mb-sm">处理后视频</div>
+                <div class="view-label q-mb-sm">{{ t('realtime.camera.processed') }}</div>
                 <div class="processed-stream-container">
                   <img 
                     v-if="processedStreamUrl" 
@@ -75,12 +75,12 @@
                   />
                   <div v-else class="no-stream-placeholder">
                     <q-spinner color="primary" size="48px" />
-                    <div class="text-grey-7 q-mt-sm">处理中...</div>
+                    <div class="text-grey-7 q-mt-sm">{{ t('realtime.camera.processing') }}</div>
                   </div>
                 </div>
                 <div class="stream-info q-mt-sm text-center">
-                  <q-badge v-if="processedStreamUrl" color="positive">处理流已激活</q-badge>
-                  <q-badge v-else color="warning">等待处理流...</q-badge>
+                  <q-badge v-if="processedStreamUrl" color="positive">{{ t('realtime.camera.streamActive') }}</q-badge>
+                  <q-badge v-else color="warning">{{ t('realtime.camera.streamWaiting') }}</q-badge>
                 </div>
               </div>
             </div>
@@ -90,15 +90,15 @@
 
       <!-- 检测结果区域 -->
       <div class="col-12 col-lg-4">
-        <!-- 操作选择面板 - 移动到顶部，因为操作是必需的 -->
+        <!-- 操作选择面板 -->
         <q-card class="operation-card">
           <q-card-section>
-            <div class="text-h6">操作选择</div>
+            <div class="text-h6">{{ t('realtime.operation.title') }}</div>
             <div class="q-mt-md">
               <q-select
                 v-model="selectedOperation"
                 :options="mergedOperationOptions"
-                label="选择图像处理操作"
+                :label="t('realtime.operation.select')"
                 outlined
                 dense
                 emit-value
@@ -107,7 +107,7 @@
                 option-value="value"
                 option-disable="disable"
                 :loading="operationsLoading"
-                :rules="[val => !!val && val !== 'none' || '请选择操作']"
+                :rules="[(val: string) => !!val && val !== 'none' || t('realtime.operation.selectRequired')]"
               >
                 <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
                   <q-item v-bind="itemProps" @click="toggleOption(opt)">
@@ -122,12 +122,12 @@
                     
                     <q-item-section v-if="opt.type && !opt.disable" side>
                       <q-badge :color="opt.type === 'operation' ? 'primary' : 'purple'">
-                        {{ opt.type === 'operation' ? '单步' : '流水线' }}
+                        {{ t(`realtime.operation.types.${opt.type === 'operation' ? 'single' : 'pipeline'}`) }}
                       </q-badge>
                     </q-item-section>
                     
                     <q-item-section v-if="opt.supportsDetection" side>
-                      <q-badge color="green">检测</q-badge>
+                      <q-badge color="green">{{ t('realtime.operation.detection') }}</q-badge>
                     </q-item-section>
                   </q-item>
                 </template>
@@ -138,7 +138,7 @@
                   <q-btn 
                     color="primary" 
                     :disable="!detectionResult || !selectedOperation || selectedOperation === 'none'" 
-                    label="应用操作"
+                    :label="t('realtime.operation.apply')"
                     icon="auto_fix_high"
                     @click="captureOnce" 
                     class="full-width"
@@ -148,7 +148,7 @@
                   <q-btn
                     :color="processingStream ? 'grey' : 'secondary'"
                     :icon="processingStream ? 'stop' : 'play_arrow'"
-                    :label="processingStream ? '停止处理流' : '实时处理流'"
+                    :label="processingStream ? t('realtime.operation.stopStream') : t('realtime.operation.startStream')"
                     @click="toggleStreamProcessing"
                     :disable="!selectedCamera || selectedCamera.status !== 'online' || !selectedOperation || selectedOperation === 'none'"
                     class="full-width"
@@ -158,10 +158,11 @@
             </div>
           </q-card-section>
         </q-card>
+
         <!-- 处理结果预览 -->
         <q-card v-if="processedResult" class="processed-card q-mt-md">
           <q-card-section>
-            <div class="text-h6">处理结果</div>
+            <div class="text-h6">{{ t('realtime.result.title') }}</div>
             <div class="q-mt-md">
               <div class="processed-image-container">
                 <img :src="processedResult.imageData" class="processed-image" />
@@ -172,47 +173,48 @@
             </div>
           </q-card-section>
         </q-card>
+
         <q-card class="result-card q-mt-md">
           <q-card-section>
-            <div class="text-h6">检测结果</div>
+            <div class="text-h6">{{ t('realtime.result.title') }}</div>
             <div v-if="detectionResult" class="result-container q-mt-md">
               <div :class="`text-h5 text-center ${detectionResult.passed ? 'text-positive' : 'text-negative'}`">
-                {{ detectionResult.passed ? '合格' : '不合格' }}
+                {{ t(`realtime.result.status.${detectionResult.passed ? 'pass' : 'fail'}`) }}
               </div>
               <q-list separator>
                 <q-item>
                   <q-item-section>
-                    <q-item-label>检测时间</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.time') }}</q-item-label>
                     <q-item-label caption>{{ formatDateTime(detectionResult.timestamp) }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item v-if="detectionResult.sourceType">
                   <q-item-section>
-                    <q-item-label>图像来源</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.source') }}</q-item-label>
                     <q-item-label caption>{{ detectionResult.sourceType }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item>
                   <q-item-section>
-                    <q-item-label>识别文字</q-item-label>
-                    <q-item-label caption>{{ detectionResult.text || '无法识别' }}</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.text') }}</q-item-label>
+                    <q-item-label caption>{{ detectionResult.text || t('realtime.result.details.noText') }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item>
                   <q-item-section>
-                    <q-item-label>置信度</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.confidence') }}</q-item-label>
                     <q-item-label caption>{{ detectionResult.confidence ? detectionResult.confidence.toFixed(1) + '%' : 'N/A' }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item v-if="detectionResult.errorReason">
                   <q-item-section>
-                    <q-item-label>错误原因</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.error') }}</q-item-label>
                     <q-item-label caption class="text-negative">{{ detectionResult.errorReason }}</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item v-if="detectionResult.fileName">
                   <q-item-section>
-                    <q-item-label>文件名</q-item-label>
+                    <q-item-label>{{ t('realtime.result.details.filename') }}</q-item-label>
                     <q-item-label caption>{{ detectionResult.fileName }}</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -220,7 +222,125 @@
             </div>
             <div v-else class="no-result-placeholder q-mt-md">
               <q-icon name="pending" size="64px" color="grey-7" class="q-mb-md" />
-              <div class="text-grey-7">等待检测结果...</div>
+              <div class="text-grey-7">{{ t('realtime.result.waiting') }}</div>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- 批量处理结果展示 -->
+        <q-card v-if="batchResults.length > 0" class="batch-results-card q-mt-md">
+          <q-card-section>
+            <div class="row items-center">
+              <div class="text-h6">批量识别结果</div>
+              <q-space />
+              <q-badge color="primary" class="q-mr-sm">共 {{ batchResults.length }} 张图片</q-badge>
+              <q-badge :color="batchProcessing ? 'secondary' : 'positive'">
+                {{ batchProcessing ? '处理中' : '处理完成' }}
+              </q-badge>
+            </div>
+            
+            <q-carousel
+              v-model="activeResultSlide"
+              transition-prev="slide-right"
+              transition-next="slide-left"
+              swipeable
+              animated
+              arrows
+              navigation
+              padding
+              height="400px"
+              class="bg-dark shadow-1 rounded-borders q-mt-md"
+            >
+              <q-carousel-slide v-for="(result, index) in batchResults" :key="index" :name="index" class="column no-wrap bg-dark">
+                <div class="row fit justify-center">
+                  <div class="col-12 col-md-6 q-pa-xs">
+                    <div class="text-h6 text-center text-white">原始图像</div>
+                    <div class="batch-image-container">
+                      <img :src="result.originalImage" class="batch-image" />
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-6 q-pa-xs">
+                    <div class="text-h6 text-center text-white">处理结果</div>
+                    <div class="batch-image-container" v-if="!result.error">
+                      <img :src="result.processedImage" class="batch-image" />
+                    </div>
+                    <div class="batch-error-container" v-else>
+                      <q-icon name="error" size="64px" color="negative" />
+                      <div class="text-negative q-mt-md">处理失败: {{ result.error }}</div>
+                    </div>
+                  </div>
+                  <div class="col-12 q-mt-md">
+                    <q-list bordered separator class="bg-dark text-white">
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label caption class="text-grey-5">文件名</q-item-label>
+                          <q-item-label>{{ result.fileName }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label caption class="text-grey-5">识别状态</q-item-label>
+                          <q-item-label>
+                            <q-badge :color="result.passed ? 'positive' : 'negative'">
+                              {{ result.passed ? '通过' : '失败' }}
+                            </q-badge>
+                          </q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label caption class="text-grey-5">识别文本</q-item-label>
+                          <q-item-label>{{ result.text || '未识别到文本' }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item>
+                        <q-item-section>
+                          <q-item-label caption class="text-grey-5">置信度</q-item-label>
+                          <q-item-label>{{ result.confidence ? result.confidence.toFixed(1) + '%' : 'N/A' }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
+                </div>
+                <div class="absolute-bottom text-center q-mb-sm">
+                  <q-badge outline color="primary">{{ index + 1 }} / {{ batchResults.length }}</q-badge>
+                </div>
+              </q-carousel-slide>
+            </q-carousel>
+            
+            <!-- 批量结果统计 -->
+            <div class="batch-summary q-mt-lg">
+              <div class="row q-col-gutter-md">
+                <div class="col-12 col-md-4">
+                  <q-card flat bordered class="text-center bg-dark text-white">
+                    <q-card-section>
+                      <div class="text-h6">总计</div>
+                      <div class="text-h4">{{ batchResults.length }}</div>
+                      <div class="text-caption text-grey-5">图片数量</div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+                
+                <div class="col-12 col-md-4">
+                  <q-card flat bordered class="text-center bg-dark text-white">
+                    <q-card-section>
+                      <div class="text-h6">通过</div>
+                      <div class="text-h4 text-positive">{{ batchResults.filter(r => r.passed).length }}</div>
+                      <div class="text-caption text-grey-5">识别成功</div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+                
+                <div class="col-12 col-md-4">
+                  <q-card flat bordered class="text-center bg-dark text-white">
+                    <q-card-section>
+                      <div class="text-h6">失败</div>
+                      <div class="text-h4 text-negative">{{ batchResults.filter(r => !r.passed).length }}</div>
+                      <div class="text-caption text-grey-5">识别失败</div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+              </div>
             </div>
           </q-card-section>
         </q-card>
@@ -228,19 +348,19 @@
         <!-- 相机控制面板 -->
         <q-card class="control-card q-mt-md">
           <q-card-section>
-            <div class="text-h6">相机控制</div>
+            <div class="text-h6">{{ t('realtime.control.title') }}</div>
             <div class="q-mt-md">
               <q-btn-group spread>
                 <q-btn 
                   :color="autoDetect ? 'grey' : 'primary'" 
                   :icon="autoDetect ? 'not_interested' : 'play_arrow'" 
-                  :label="autoDetect ? '停止自动检测' : '开始自动检测'"
+                  :label="autoDetect ? t('realtime.control.autoDetect.stop') : t('realtime.control.autoDetect.start')"
                   @click="toggleAutoDetect"
                   :disable="(!selectedCamera || selectedCamera.status !== 'online') && !uploadedImage" />
                 <q-btn 
                   color="secondary" 
                   icon="photo_camera" 
-                  label="单次采集" 
+                  :label="t('realtime.control.capture')" 
                   @click="captureOnce"
                   :disable="!isStreaming && !uploadedImage" />
               </q-btn-group>
@@ -248,9 +368,9 @@
               <q-list class="q-mt-md">
                 <q-item>
                   <q-item-section>
-                    <q-item-label>曝光时间</q-item-label>
+                    <q-item-label>{{ t('realtime.control.exposure') }}</q-item-label>
                     <q-slider v-model="cameraSettings.exposure" :min="0" :max="100" label 
-                              @update:model-value="val => updateSettings('exposure', val)"
+                              @update:model-value="(val: number) => updateSettings('exposure', val || 0)"
                               :disable="!selectedCamera || selectedCamera.status !== 'online'" />
                   </q-item-section>
                   <q-item-section avatar>
@@ -259,9 +379,9 @@
                 </q-item>
                 <q-item>
                   <q-item-section>
-                    <q-item-label>增益</q-item-label>
+                    <q-item-label>{{ t('realtime.control.gain') }}</q-item-label>
                     <q-slider v-model="cameraSettings.gain" :min="0" :max="100" label 
-                              @update:model-value="val => updateSettings('gain', val)"
+                              @update:model-value="(val: number) => updateSettings('gain', val || 0)"
                               :disable="!selectedCamera || selectedCamera.status !== 'online'" />
                   </q-item-section>
                   <q-item-section avatar>
@@ -280,6 +400,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import CameraCapture from '../components/capture/CameraCapture.vue'
 import { cameraService } from '@/services/camera'
 import { settingsService, Device } from '@/services/settings'
@@ -313,6 +434,7 @@ declare module '@/services/pipeline' {
 }
 
 const $q = useQuasar()
+const { t } = useI18n()
 
 // 确认cameraService实例已正确导入
 console.log('cameraService实例:', cameraService)
@@ -364,6 +486,13 @@ const streamReady = ref(false)
 const retryCount = ref(0)
 const MAX_RETRIES = 5
 const RETRY_DELAY = 2000
+
+// 添加批量处理状态和结果
+const batchResults = ref<any[]>([])
+const batchProcessing = ref(false)
+const batchProgress = ref(0)
+const totalBatchImages = ref(0)
+const activeResultSlide = ref(0)
 
 // 修改合并操作选项接口，增加类型定义
 interface OperationOption {
@@ -566,7 +695,7 @@ const selectCamera = (camera: Device) => {
 }
 
 // 更新相机设置
-const updateSettings = async (key: string, value: any) => {
+const updateSettings = async (key: string, value: number) => {
   if (!selectedCamera.value) return
   
   try {
@@ -689,72 +818,20 @@ const updateCameraStatus = (status: string) => {
 }
 
 // 修改单次采集函数，支持无相机情况
-const captureOnce = () => {
-  // 检查是否选择了操作
-  if (!selectedOperation.value || selectedOperation.value === 'none') {
-    $q.notify({
-      type: 'warning',
-      message: '请先选择一个操作，然后再进行采集',
-      position: 'top'
-    })
-    return
-  }
-  
-  // 允许上传图片或使用相机捕获
-  if (!isStreaming.value && !uploadedImage.value) {
-    // 既没有相机流也没有上传的图片，提示用户上传
-    $q.notify({
-      type: 'warning',
-      message: '没有活动的相机流，请上传一张图片',
-      position: 'top'
-    })
+const captureOnce = async () => {
+  try {
+    // 处理图像
+    await processImage()
     
-    // 触发CameraCapture组件的上传功能
-    const cameraEl = document.querySelector('.camera-capture')
-    if (cameraEl) {
-      const uploadBtn = cameraEl.querySelector('button[label="上传图片"]')
-      if (uploadBtn) {
-        (uploadBtn as HTMLButtonElement).click()
-      }
-    }
-    return
-  }
-  
-  console.log('执行单次采集')
-  
-  // 通过触发CameraCapture组件的拍照按钮来实现
-  const cameraEl = document.querySelector('.camera-capture')
-  if (cameraEl) {
-    // 如果是相机流模式，寻找拍照按钮
-    if (isStreaming.value) {
-      const captureBtn = cameraEl.querySelector('button[label="拍照"]')
-      if (captureBtn) {
-        (captureBtn as HTMLButtonElement).click()
-      } else {
-        $q.notify({
-          type: 'warning',
-          message: '无法触发拍照功能',
-          position: 'top'
-        })
-      }
-    } 
-    // 如果是上传的图片模式，触发处理按钮
-    else if (uploadedImage.value) {
-      const processBtn = cameraEl.querySelector('button[label="使用此图片处理"]')
-      if (processBtn) {
-        (processBtn as HTMLButtonElement).click()
-      } else {
-        $q.notify({
-          type: 'warning',
-          message: '无法处理上传的图片',
-          position: 'top'
-        })
-      }
-    }
-  } else {
+    $q.notify({
+      type: 'positive',
+      message: t('realtime.notifications.processingComplete'),
+      position: 'top'
+    })
+  } catch (error) {
     $q.notify({
       type: 'negative',
-      message: '找不到相机控件',
+      message: t('realtime.notifications.processingFailed', { error: (error as Error).message }),
       position: 'top'
     })
   }
@@ -769,78 +846,58 @@ const toggleStreamProcessing = async () => {
   
   // 验证相机和操作选择
   if (!selectedCamera.value) {
-    $q.notify({ type: 'warning', message: '请先选择一个相机', position: 'top' })
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.selectCamera'),
+      position: 'top'
+    })
     return
   }
   
   if (!selectedOperation.value || selectedOperation.value === 'none') {
-    $q.notify({ type: 'warning', message: '请先选择一个操作', position: 'top' })
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.selectOperation'),
+      position: 'top'
+    })
     return
   }
   
   if (selectedCamera.value.status !== 'online') {
-    $q.notify({ type: 'negative', message: '选择的相机当前不可用', position: 'top' })
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.cameraUnavailable'),
+      position: 'top'
+    })
     return
   }
   
+  $q.notify({
+    type: 'info',
+    message: t('realtime.notifications.startProcessing'),
+    position: 'top'
+  })
+  
   try {
-    $q.loading.show({
-      message: '正在启动视频处理...',
-      spinnerColor: 'primary',
-      backgroundColor: 'dark',
-    })
-    
-    // 获取操作信息
-    const selectedOp = mergedOperationOptions.value.find(opt => opt.value === selectedOperation.value)
-    if (!selectedOp) {
-      throw new Error('无法获取选定的操作信息')
+    const operation = selectedOperation.value
+    if (!operation) {
+      throw new Error(t('realtime.notifications.invalidOperation'))
     }
     
-    // 确定操作类型和ID
-    const operationType = selectedOperation.value.startsWith('operation:') ? 'operation' : 'pipeline'
-    const operationId = parseInt(selectedOperation.value.split(':')[1])
+    // 启动处理流
+    await startStream()
     
-    if (isNaN(operationId)) {
-      throw new Error(`无效的操作ID: ${operationId}`)
-    }
-    
-    // 获取摄像头ID
-    const cameraId = getCameraDeviceId(selectedCamera.value)
-    console.log('使用摄像头设备ID:', cameraId)
-    
-    // 构建处理流URL
-    const streamUrl = cameraService.getCameraStreamUrl(
-      cameraId,
-      {
-        operation_id: operationId,
-        operation_type: operationType
-      }
-    ) + `&_t=${new Date().getTime()}`
-    
-    // 重置状态
-    processedStreamRetryCount = 0
-    processedStreamFirstLoaded = false
-    
-    // 更新UI状态
-    processingStream.value = true
-    processedStreamUrl.value = streamUrl
-    
-    console.log('处理流URL:', processedStreamUrl.value)
-    
-    $q.notify({ type: 'positive', message: '实时处理已启动', position: 'top' })
-  } catch (error: any) {
-    console.error('启动处理流失败:', error)
     $q.notify({
-      type: 'negative',
-      message: `启动处理流失败: ${error.message || '未知错误'}`,
+      type: 'positive',
+      message: t('realtime.notifications.streamStarted'),
       position: 'top'
     })
-    
-    // 重置状态
-    processingStream.value = false
-    processedStreamUrl.value = null
-  } finally {
-    $q.loading.hide()
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: t('realtime.notifications.streamStartFailed', { error: (error as Error).message }),
+      position: 'top'
+    })
   }
 }
 
@@ -1020,41 +1077,19 @@ let processedStreamRetryCount = 0
 let processedStreamFirstLoaded = false
 
 // 修改切换自动检测函数，考虑上传的图片情况
-const toggleAutoDetect = () => {
+const toggleAutoDetect = async () => {
   autoDetect.value = !autoDetect.value
   
   if (autoDetect.value) {
-    // 确保选择了操作
-    if (!selectedOperation.value || selectedOperation.value === 'none') {
-      $q.notify({
-        type: 'warning',
-        message: '请先选择一个操作，才能开始自动检测',
-        position: 'top'
-      });
-      autoDetect.value = false;
-      return;
-    }
-    
-    // 启动自动检测
-    autoDetectInterval = window.setInterval(() => {
-      // 自动调用捕获函数
-      captureOnce();
-    }, 3000); // 每3秒检测一次
-    
     $q.notify({
-      type: 'positive',
-      message: '自动检测已开启',
+      type: 'info',
+      message: t('realtime.notifications.autoDetectStarted'),
       position: 'top'
     })
   } else {
-    // 停止自动检测
-    if (autoDetectInterval) {
-      clearInterval(autoDetectInterval)
-      autoDetectInterval = null
-    }
     $q.notify({
-      type: 'warning',
-      message: '自动检测已停止',
+      type: 'info',
+      message: t('realtime.notifications.autoDetectStopped'),
       position: 'top'
     })
   }
@@ -1073,10 +1108,10 @@ const formatDateTime = (date: any) => {
 // 设备状态文本
 const deviceStatusText = (status: string): string => {
   switch (status) {
-    case 'online': return '在线'
-    case 'offline': return '离线'
-    case 'error': return '故障'
-    default: return '未知'
+    case 'online': return t('realtime.status.online')
+    case 'offline': return t('realtime.status.offline')
+    case 'error': return t('realtime.status.error')
+    default: return t('realtime.status.unknown')
   }
 }
 
@@ -1092,8 +1127,8 @@ watch(selectedCamera, (newCamera) => {
     
     // 通知用户
     $q.notify({
-      type: newCamera.status === 'online' ? 'positive' : 'warning',
-      message: `已选择相机: ${newCamera.name}`,
+      type: 'info',
+      message: t('realtime.notifications.cameraSelected', { name: newCamera.name }),
       position: 'top'
     })
   }
@@ -1145,10 +1180,19 @@ onBeforeUnmount(() => {
     URL.revokeObjectURL(detectionResult.value.imageData)
   }
   
+  // 清理批量处理结果
+  batchResults.value.forEach(result => {
+    if (result.processedImage && result.processedImage.startsWith('blob:')) {
+      URL.revokeObjectURL(result.processedImage)
+    }
+  })
+  
   // 重置所有状态
   isProcessingImage.value = false
   streamReady.value = false
   retryCount.value = 0
+  batchResults.value = []
+  batchProcessing.value = false
 })
 
 // 获取操作标签的函数
@@ -1161,8 +1205,14 @@ const getOperationName = (operationValue: string | null): string => {
   return option.label
 }
 
-// 修改 onCapture 函数
+// 修改 onCapture 函数处理批量上传
 const onCapture = async (result: any) => {
+  // 检查是否为批量上传
+  if (result.source === 'batch-upload' && result.batchImages) {
+    await processBatchImages(result.batchImages)
+    return
+  }
+
   // 检查是否为上传的图片
   const isUploadedImage = result.source === 'upload'
   const captureSource = isUploadedImage ? '上传的图片' : '相机捕获'
@@ -1173,7 +1223,7 @@ const onCapture = async (result: any) => {
   if (!selectedOperation.value || selectedOperation.value === 'none') {
     $q.notify({
       type: 'warning',
-      message: '请先选择一个操作，才能处理图像',
+      message: t('realtime.notifications.selectOperation'),
       position: 'top'
     })
     return
@@ -1241,7 +1291,15 @@ const onCapture = async (result: any) => {
       }
     }
     
-    let response
+    // 定义响应变量
+    let response: any;
+    
+    // 定义处理结果变量
+    let processedImageUrl = '';
+    let detectedText = '';
+    let confidence = 0;
+    let isPassed = false;
+    
     if (isUploadedImage) {
       // 处理上传的图片
       const formData = new FormData()
@@ -1261,31 +1319,7 @@ const onCapture = async (result: any) => {
           responseType: 'json'
         }
       )
-    } else {
-      // 获取处理后的摄像头快照
-      const camera = selectedCamera.value
-      if (!camera) {
-        throw new Error('未选择摄像头')
-      }
-
-      const cameraId = getCameraDeviceId(camera)
-      response = await axios.get(
-        `${API_BASE_URL}/cameras/camera_${cameraId}/snapshot`,
-        {
-          params: {
-            operation_id: operationId,
-            operation_type: operationType
-          },
-          responseType: 'arraybuffer',
-          timeout: 10000 // 10秒超时
-        }
-      )
-    }
-
-    // 处理响应 - 区分上传图片和摄像头捕获
-    let processedImageUrl, detectedText, confidence, isPassed
-    
-    if (isUploadedImage) {
+      
       // 上传图片处理返回的是JSON数据
       const responseData = response.data
       
@@ -1312,23 +1346,91 @@ const onCapture = async (result: any) => {
       // 确保上传图片状态保持，防止处理后原始图片消失
       uploadedImage.value = true
     } else {
-      // 摄像头捕获返回的是图像数据
-      const contentType = response.headers['content-type']
-      if (contentType === 'application/json') {
-        // 如果返回的是 JSON，说明是错误信息
-        const errorText = new TextDecoder().decode(response.data)
-        const errorJson = JSON.parse(errorText)
-        throw new Error(errorJson.message || '处理失败')
+      // 获取处理后的摄像头快照
+      const camera = selectedCamera.value
+      if (!camera) {
+        throw new Error('未选择摄像头')
       }
 
-      // 创建处理后图像 URL
-      const imageBlob = new Blob([response.data], { type: 'image/jpeg' })
-      processedImageUrl = URL.createObjectURL(imageBlob)
+      const cameraId = getCameraDeviceId(camera)
       
-      // 摄像头捕获暂不支持返回文字识别信息
-      detectedText = ''
-      confidence = 0
-      isPassed = false
+      try {
+        // 请求后端API，传入return_json=true，使用JSON格式获取结果
+        response = await axios.get(
+          `${API_BASE_URL}/cameras/camera_${cameraId}/snapshot`,
+          {
+            params: {
+              operation_id: operationId,
+              operation_type: operationType,
+              return_json: true  // 明确请求JSON格式的响应
+            },
+            responseType: 'json',  // 改为json，因为我们期望接收JSON对象
+            timeout: 10000 // 10秒超时
+          }
+        )
+        
+        // 处理JSON响应
+        const responseData = response.data
+        
+        // 提取处理后的图片数据
+        processedImageUrl = responseData.image
+        
+        // 提取识别文字和置信度 - 注意：当前后端版本可能不返回这些数据
+        detectedText = responseData.text || ''
+        confidence = responseData.confidence || 0
+        isPassed = responseData.passed || false
+        
+        // 检查是否有错误信息
+        if (responseData.error) {
+          console.warn('处理图像时发生错误:', responseData.error)
+        }
+        
+        console.log('摄像头捕获处理结果:', {
+          text: detectedText,
+          confidence: confidence,
+          passed: isPassed,
+          错误: responseData.error || '无'
+        })
+        
+        // 显示处理结果预览
+        processedResult.value = {
+          imageData: processedImageUrl,
+          operation: selectedOperation.value
+        }
+      } catch (error) {
+        console.warn('JSON格式获取失败，尝试使用二进制格式:', error)
+        
+        // 回退到旧版API方式，使用二进制响应
+        response = await axios.get(
+          `${API_BASE_URL}/cameras/camera_${cameraId}/snapshot`,
+          {
+            params: {
+              operation_id: operationId,
+              operation_type: operationType
+            },
+            responseType: 'arraybuffer',
+            timeout: 10000 // 10秒超时
+          }
+        )
+        
+        // 检查是否是JSON格式的错误信息
+        const contentType = response.headers['content-type']
+        if (contentType === 'application/json') {
+          // 如果返回的是 JSON，说明是错误信息
+          const errorText = new TextDecoder().decode(response.data)
+          const errorJson = JSON.parse(errorText)
+          throw new Error(errorJson.message || '处理失败')
+        }
+
+        // 创建处理后图像 URL
+        const imageBlob = new Blob([response.data], { type: 'image/jpeg' })
+        processedImageUrl = URL.createObjectURL(imageBlob)
+        
+        // 旧版API不支持返回文字识别信息
+        detectedText = ''
+        confidence = 0
+        isPassed = false
+      }
     }
 
     // 更新检测结果
@@ -1372,6 +1474,163 @@ const onCapture = async (result: any) => {
     }
   } finally {
     isProcessingImage.value = false
+    $q.loading.hide()
+  }
+}
+
+// 处理批量图片
+const processBatchImages = async (batchImages: {imageData: string, fileName: string}[]) => {
+  // 检查是否选择了操作
+  if (!selectedOperation.value || selectedOperation.value === 'none') {
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.selectOperation'),
+      position: 'top'
+    })
+    return
+  }
+
+  // 清空之前的批量结果
+  batchResults.value = []
+  batchProcessing.value = true
+  batchProgress.value = 0
+  totalBatchImages.value = batchImages.length
+  
+  // 获取操作信息
+  const operationType = selectedOperation.value.startsWith('operation:') ? 'operation' : 'pipeline'
+  const operationId = parseInt(selectedOperation.value.split(':')[1])
+
+  if (isNaN(operationId)) {
+    $q.notify({
+      type: 'negative',
+      message: '无效的操作ID',
+      position: 'top'
+    })
+    batchProcessing.value = false
+    return
+  }
+
+  $q.loading.show({
+    message: `正在批量处理图片 (0/${batchImages.length})...`,
+    spinnerColor: 'primary',
+    backgroundColor: 'dark',
+  })
+
+  try {
+    // 逐个处理图片
+    for (let i = 0; i < batchImages.length; i++) {
+      const imageData = batchImages[i]
+      
+      // 更新进度
+      batchProgress.value = Math.round(((i + 1) / batchImages.length) * 100)
+      
+      // 使用新的loading show代替update
+      $q.loading.hide()
+      $q.loading.show({
+        message: `正在批量处理图片 (${i + 1}/${batchImages.length})...`,
+        spinnerColor: 'primary',
+        backgroundColor: 'dark',
+      })
+      
+      try {
+        // 处理单张图片
+        const formData = new FormData()
+        // 从 base64 转换为 blob
+        const base64Data = imageData.imageData.split(',')[1]
+        const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(r => r.blob())
+        formData.append('image', blob, imageData.fileName || 'image.jpg')
+        formData.append('operation_id', operationId.toString())
+        formData.append('operation_type', operationType)
+        
+        const response = await axios.post(
+          `${API_BASE_URL}/cameras/process-image`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            responseType: 'json'
+          }
+        )
+        
+        const responseData = response.data
+        
+        // 添加到结果列表
+        batchResults.value.push({
+          originalImage: imageData.imageData,
+          processedImage: responseData.image,
+          text: responseData.text || '',
+          confidence: responseData.confidence || 0,
+          passed: responseData.passed || false,
+          fileName: imageData.fileName,
+          timestamp: new Date(),
+          error: null
+        })
+        
+        // 如果是第一张图片，也显示在主结果区域
+        if (i === 0) {
+          // 更新检测结果
+          detectionResult.value = {
+            imageData: imageData.imageData,
+            processedImageData: responseData.image,
+            timestamp: new Date(),
+            passed: responseData.passed || false,
+            text: responseData.text || '',
+            confidence: responseData.confidence || 0,
+            sourceType: '批量上传',
+            fileName: imageData.fileName
+          }
+          
+          // 显示处理结果预览
+          processedResult.value = {
+            imageData: responseData.image,
+            operation: selectedOperation.value
+          }
+        }
+        
+        // 保存检测结果到历史记录
+        await detectionService.saveDetectionResult({
+          text: responseData.text || '',
+          confidence: responseData.confidence || 0,
+          passed: responseData.passed || false,
+          imageData: imageData.imageData,
+          processedImageData: responseData.image,
+          operationId: operationId,
+          operationType: operationType
+        })
+      } catch (error: any) {
+        console.error(`处理图片 ${imageData.fileName} 失败:`, error)
+        
+        // 添加错误结果
+        batchResults.value.push({
+          originalImage: imageData.imageData,
+          processedImage: null,
+          text: '',
+          confidence: 0,
+          passed: false,
+          fileName: imageData.fileName,
+          timestamp: new Date(),
+          error: error.message || '处理失败'
+        })
+      }
+    }
+    
+    // 完成处理
+    $q.notify({
+      type: 'positive',
+      message: `批量处理完成，共处理 ${batchImages.length} 张图片`,
+      position: 'top'
+    })
+    
+    // 确保上传图片状态保持
+    uploadedImage.value = true
+  } catch (error: any) {
+    console.error('批量处理图片失败:', error)
+    $q.notify({
+      type: 'negative',
+      message: `批量处理失败: ${error.message || '未知错误'}`,
+      position: 'top'
+    })
+  } finally {
+    batchProcessing.value = false
     $q.loading.hide()
   }
 }
@@ -1460,6 +1719,119 @@ const onCameraError = (error: any) => {
 }
 
 const emit = defineEmits(['camera-status-change'])
+
+// 处理图像函数
+const processImage = async () => {
+  // 检查是否选择了操作
+  if (!selectedOperation.value || selectedOperation.value === 'none') {
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.selectOperation'),
+      position: 'top'
+    })
+    return
+  }
+  
+  // 允许上传图片或使用相机捕获
+  if (!isStreaming.value && !uploadedImage.value) {
+    $q.notify({
+      type: 'warning',
+      message: t('realtime.notifications.uploadImage'),
+      position: 'top'
+    })
+    
+    // 触发CameraCapture组件的上传功能
+    const cameraEl = document.querySelector('.camera-capture')
+    if (cameraEl) {
+      const uploadBtn = cameraEl.querySelector('button[label="上传图片"]')
+      if (uploadBtn) {
+        (uploadBtn as HTMLButtonElement).click()
+      }
+    }
+    return
+  }
+  
+  console.log('执行图像处理')
+  
+  // 通过触发CameraCapture组件的拍照按钮来实现
+  const cameraEl = document.querySelector('.camera-capture')
+  if (cameraEl) {
+    // 如果是相机流模式，寻找拍照按钮
+    if (isStreaming.value) {
+      const captureBtn = cameraEl.querySelector('button[label="拍照"]')
+      if (captureBtn) {
+        (captureBtn as HTMLButtonElement).click()
+      } else {
+        throw new Error(t('realtime.notifications.noCameraControl'))
+      }
+    } 
+    // 如果是上传的图片模式，触发处理按钮
+    else if (uploadedImage.value) {
+      const processBtn = cameraEl.querySelector('button[label="使用此图片处理"]')
+      if (processBtn) {
+        (processBtn as HTMLButtonElement).click()
+      } else {
+        throw new Error(t('realtime.notifications.noCameraControl'))
+      }
+    }
+  } else {
+    throw new Error(t('realtime.notifications.noCameraControl'))
+  }
+}
+
+// 启动处理流函数
+const startStream = async () => {
+  if (!selectedCamera.value || !selectedOperation.value) {
+    throw new Error(t('realtime.notifications.invalidOperation'))
+  }
+
+  $q.loading.show({
+    message: t('realtime.notifications.startProcessing'),
+    spinnerColor: 'primary',
+    backgroundColor: 'dark',
+  })
+
+  try {
+    // 获取操作信息
+    const selectedOp = mergedOperationOptions.value.find(opt => opt.value === selectedOperation.value)
+    if (!selectedOp) {
+      throw new Error(t('realtime.notifications.invalidOperation'))
+    }
+    
+    // 确定操作类型和ID
+    const operationType = selectedOperation.value.startsWith('operation:') ? 'operation' : 'pipeline'
+    const operationId = parseInt(selectedOperation.value.split(':')[1])
+    
+    if (isNaN(operationId)) {
+      throw new Error(t('realtime.notifications.invalidOperation'))
+    }
+    
+    // 获取摄像头ID
+    const cameraId = getCameraDeviceId(selectedCamera.value)
+    console.log('使用摄像头设备ID:', cameraId)
+    
+    // 构建处理流URL
+    const streamUrl = cameraService.getCameraStreamUrl(
+      cameraId,
+      {
+        operation_id: operationId,
+        operation_type: operationType
+      }
+    ) + `&_t=${new Date().getTime()}`
+    
+    // 重置状态
+    processedStreamRetryCount = 0
+    processedStreamFirstLoaded = false
+    
+    // 更新UI状态
+    processingStream.value = true
+    processedStreamUrl.value = streamUrl
+    
+    console.log('处理流URL:', processedStreamUrl.value)
+  } finally {
+    $q.loading.hide()
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1471,7 +1843,8 @@ const emit = defineEmits(['camera-status-change'])
 .result-card,
 .control-card,
 .operation-card,
-.processed-card {
+.processed-card,
+.batch-results-card {
   background: var(--dark-card);
 }
 
@@ -1585,6 +1958,51 @@ const emit = defineEmits(['camera-status-change'])
   .q-badge {
     padding: 0.5rem 1rem;
     border-radius: 4px;
+  }
+}
+
+// 添加批量处理相关样式
+.batch-image-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #1a1a1a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.batch-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.batch-error-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(211, 47, 47, 0.2);
+  border-radius: 4px;
+  border: 1px solid rgba(211, 47, 47, 0.3);
+}
+
+.batch-summary {
+  .q-card {
+    transition: all 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
   }
 }
 </style>

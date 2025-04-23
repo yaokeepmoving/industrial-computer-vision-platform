@@ -34,7 +34,7 @@
                 <rect x="48" y="72" width="24" height="6" fill="#FF6B35"/>
               </svg>
             </div>
-            <div class="system-title">工业铸字识别系统</div>
+            <div class="system-title">{{ t('common.systemName') }}</div>
           </div>
           
           <navigation-menu />
@@ -57,6 +57,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import StatusBar from './components/layout/StatusBar.vue'
 import NavigationMenu from './components/layout/NavigationMenu.vue'
 import AlarmPanel from './components/common/AlarmPanel.vue'
@@ -75,6 +76,7 @@ onMounted(() => {
   }
 })
 
+const { t } = useI18n()
 const $q = useQuasar()
 const leftDrawerOpen = ref(true)
 const alarmStore = useAlarmStore()
@@ -88,19 +90,19 @@ const currentAlarmLevel = computed(() => alarmStore.highestAlarmLevel)
 // 紧急停止确认
 function confirmEmergencyStop() {
   $q.dialog({
-    title: '紧急停止',
-    message: '确认执行紧急停止操作？这将停止所有设备运行。',
+    title: t('emergencyStop.title'),
+    message: t('emergencyStop.message'),
     color: 'negative',
     icon: 'warning',
     persistent: true,
     ok: {
-      label: '确认停止',
+      label: t('emergencyStop.confirm'),
       color: 'negative',
       flat: false,
       'no-caps': true
     },
     cancel: {
-      label: '取消',
+      label: t('common.cancel'),
       color: 'dark',
       flat: true,
       'no-caps': true
@@ -110,7 +112,7 @@ function confirmEmergencyStop() {
     alarmStore.triggerEmergencyStop()
     $q.notify({
       type: 'negative',
-      message: '已执行紧急停止操作',
+      message: t('emergencyStop.executed'),
       icon: 'warning'
     })
   })
