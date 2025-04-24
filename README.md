@@ -39,17 +39,17 @@
 
 2. 点击设置
 
-![alt text](</README-PHOTOS/20250424143137.png>)
+![alt text](</README-PHOTOS/fc273eca3328921851e2d0ab130b5e4.png>)
 
 3. 修改语言
 
-![alt text](</README-PHOTOS/20250424143137-1.png>)
+![alt text](</README-PHOTOS/5d038ed7c1369f2d13502c354727de1.png>)
 
 相机等硬件会自动连接，也可在设置中自行添加。
 
 4. 数据标注
 
-![alt text](</README-PHOTOS/20250424143137-2.png>)
+![alt text](</README-PHOTOS/b9014ec2a523cff7a627f09042641f4.png>)
 
 红框内图片是为了训练模型正确找到文本区域
 蓝框内图片是为了训练模型正确识别文本内容
