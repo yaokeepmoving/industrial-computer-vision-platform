@@ -33,36 +33,36 @@
 
 1. 双击 start.bat
 
-![alt text](<Pasted image 20250424051101.png>)
+![alt text](<Pasted image /photos/20250424051101.png>)
 
-![alt text](<Pasted image 20250424143027.png>)
+![alt text](<Pasted image /photos/20250424143027.png>)
 
 2. 点击设置
 
-![[Pasted image 20250424143137.png]]
+![alt text](<Pasted image /photos/20250424143137.png>)
 
 3. 修改语言
 
-![[Pasted image 20250424143202.png]]
+![alt text](<Pasted image /photos/20250424143137-1.png>)
 
 相机等硬件会自动连接，也可在设置中自行添加。
 
 4. 数据标注
 
-![[Pasted image 20250424143827.png]]
+![alt text](<Pasted image /photos/20250424143137-2.png>)
 
 红框内图片是为了训练模型正确找到文本区域
 蓝框内图片是为了训练模型正确识别文本内容
 
 5. 图像处理
 
-![[Pasted image 20250424143954.png]]
+![alt text](<Pasted image /photos/20250424143954.png>)
 
 先设置单步处理，再将单步处理通过串联的方式形成流水线处理
 
 6. 实时监控
 
-![[Pasted image 20250424144056.png]]
+![alt text](<Pasted image /photos/20250424144056.png>)
 
 在实时监控页面可以选择刚才设置的单步处理或流水线处理来对图像进行修改
 
