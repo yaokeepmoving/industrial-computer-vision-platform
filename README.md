@@ -33,9 +33,9 @@
 
 1. 双击 start.bat
 
-![[Pasted image 20250424051101.png]]
+![alt text](<Pasted image 20250424051101.png>)
 
-![[Pasted image 20250424143027.png]]
+![alt text](<Pasted image 20250424143027.png>)
 
 2. 点击设置
 
