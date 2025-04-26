@@ -72,7 +72,7 @@
 
 复制模型ID
 
-![alt text](</README-PHOTOS/1745480781735.png>)
+![alt text](</README-PHOTOS/1745480781735.jpg>)
 
 调用模型
 
