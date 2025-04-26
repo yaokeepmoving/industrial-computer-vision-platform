@@ -54,16 +54,36 @@
 红框内图片是为了训练模型正确找到文本区域
 蓝框内图片是为了训练模型正确识别文本内容
 
-5. 图像处理
+5. 合成数据
+
+![alt text](/README-PHOTOS/75c3321edb28ee14457d976652e6bc1.jpg)
+
+6. 图像处理
 
 ![alt text](</README-PHOTOS/20250424143954.png>)
 
 先设置单步处理，再将单步处理通过串联的方式形成流水线处理
 
-6. 实时监控
+![alt text](</README-PHOTOS/f193d218453a12e65a9970fa06f83dd.png>)
+
+7. 模型调用
+
+![alt text](</README-PHOTOS/1f45896e0e349076c2df3fa8cb65858.png>)
+
+复制模型ID
+
+![alt text](</README-PHOTOS/1745480781735.png>)
+
+调用模型
+
+8. 实时监控
 
 ![alt text](</README-PHOTOS/20250424144056.png>)
 
 在实时监控页面可以选择刚才设置的单步处理或流水线处理来对图像进行修改
 
+
+## 项目背景
+
+2025年4月20日至4月27日
 
