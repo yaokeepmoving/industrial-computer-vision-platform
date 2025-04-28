@@ -28,7 +28,6 @@
 - 数据存储：IndexedDB
 - 设备通信：WebSocket + OPC UA
 
-
 ## 启动方式
 
 1. 双击 start.bat
@@ -36,17 +35,14 @@
 ![alt text](</README-PHOTOS/20250424051101.png>)
 
 ![alt text](</README-PHOTOS/20250424143027.png>)
-
 2. 点击设置
 
 ![alt text](</README-PHOTOS/fc273eca3328921851e2d0ab130b5e4.png>)
-
 3. 修改语言
 
 ![alt text](</README-PHOTOS/5d038ed7c1369f2d13502c354727de1.png>)
 
 相机等硬件会自动连接，也可在设置中自行添加。
-
 4. 数据标注
 
 ![alt text](</README-PHOTOS/b9014ec2a523cff7a627f09042641f4.png>)
