@@ -167,7 +167,8 @@ export default {
       days: 'DAYS ',
       hours: 'HOURS ',
       minutes: 'MINUTES ',
-      seconds: 'SECONDS '
+      seconds: 'SECONDS ',
+      unknown:'UNKNOWN'
     },
     deviceStatus: {
       title: 'Device Status',

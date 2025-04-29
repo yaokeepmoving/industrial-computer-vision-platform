@@ -167,7 +167,8 @@ export default {
       days: '天',
       hours: '小时',
       minutes: '分钟',
-      seconds: '秒'
+      seconds: '秒',
+      unknown:'未知'
     },
     deviceStatus: {
       title: '设备状态',

@@ -104,6 +104,7 @@ function confirmEmergencyStop() {
     cancel: {
       label: t('common.cancel'),
       color: 'dark',
+      textColor: 'white',
       flat: true,
       'no-caps': true
     }

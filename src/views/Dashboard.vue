@@ -274,7 +274,7 @@ const formatDate = (timestamp) => {
 
 // 格式化运行时间
 const formatUptime = (hours) => {
-  if (!hours) return '未知';
+  if (!hours) return t('dashboard.systemStatus.unknown');
   
   const days = Math.floor(hours / 24);
   const remainingHours = Math.floor(hours % 24);

@@ -8,7 +8,7 @@ import ary from './locales/ary'
 
 const i18n = createI18n({
   legacy: false, // Set to false to use Composition API
-  locale: localStorage.getItem('language'),
+  locale: localStorage.getItem('language') || 'en', // Default to 'en' if no value in localStorage
   fallbackLocale: 'en', // Fallback language
   messages: {
     'zh-CN': zhCN,
