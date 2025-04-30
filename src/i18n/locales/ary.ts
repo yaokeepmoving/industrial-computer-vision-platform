@@ -167,7 +167,8 @@ export default {
       days: 'أيام ',
       hours: 'ساعات ',
       minutes: 'دقائق ',
-      seconds: 'ثواني '
+      seconds: 'ثواني ',
+      unknown:'مجهول'
     },
     deviceStatus: {
       title: 'حالة الأجهزة',

@@ -397,7 +397,7 @@ const filteredDevices = computed(() => {
 })
 
 // 当前语言
-const currentLanguage = ref(localStorage.getItem('language') || 'zh-CN')
+const currentLanguage = ref(localStorage.getItem('language') || 'en')
 
 // 处理语言切换
 const handleLanguageChange = (newLanguage: string) => {

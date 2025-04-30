@@ -167,7 +167,8 @@ export default {
       days: 'JOURS ',
       hours: 'HEURES ',
       minutes: 'MINUTES ',
-      seconds: 'SECONDES '
+      seconds: 'SECONDES ',
+      unknown:'INCONNU'
     },
     deviceStatus: {
       title: 'État des Appareils',
