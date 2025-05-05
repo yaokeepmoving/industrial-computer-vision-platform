@@ -78,7 +78,7 @@
 
 ### 8. 实时监控
 
-![alt text](</README-PHOTOS/bd2d2785fbf9d294e2bd1fa87d5da99.png>)
+![alt text](</README-PHOTOS/bd2d2785fbf9d294e2bd1fa87d5da99.jpg>)
 
 在实时监控页面可以选择刚才设置的单步处理或流水线处理来对图像进行修改
 
